@@ -63,6 +63,9 @@ cache artifacts; untracked in-progress backend scaffolding existed
 - Tooling: Vitest + Testing Library + jest-dom; 31 tests covering the client
   (including refresh-failure and transient-network cases), auth context,
   protected routes, and all wired pages. `tsc` strict and ESLint clean.
+- Follow-up (same window): added `RouteTitle` (+2 tests, 33 total) so screen
+  readers regain page-change context via `document.title`; added
+  `scripts/e2e_smoke.sh` encoding the verified live-HTTP journey.
 
 ### E2E verification
 
