@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthContext";
 const NAV_ITEMS = [
   { to: "/assessment", label: "Assessment" },
   { to: "/learning-path", label: "Learning path" },
+  { to: "/profile", label: "Profile" },
 ] as const;
 
 /**

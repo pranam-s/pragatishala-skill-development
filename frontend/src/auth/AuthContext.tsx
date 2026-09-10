@@ -21,6 +21,9 @@ interface AuthState {
   initializing: boolean;
   login: (email: string, password: string) => Promise<User>;
   register: (payload: RegisterPayload) => Promise<User>;
+  updateProfile: (
+    payload: Partial<Pick<User, "full_name" | "target_role" | "experience_level">>,
+  ) => Promise<User>;
   logout: () => void;
 }
 
@@ -70,14 +73,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return created;
   }, []);
 
+  const updateProfile = useCallback(
+    async (
+      payload: Partial<Pick<User, "full_name" | "target_role" | "experience_level">>,
+    ) => {
+      const updated = await api.updateProfile(payload);
+      setUser(updated);
+      return updated;
+    },
+    [],
+  );
+
   const logout = useCallback(() => {
     clearTokens();
     setUser(null);
   }, []);
 
   const value = useMemo<AuthState>(
-    () => ({ user, initializing, login, register, logout }),
-    [user, initializing, login, register, logout],
+    () => ({ user, initializing, login, register, updateProfile, logout }),
+    [user, initializing, login, register, updateProfile, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

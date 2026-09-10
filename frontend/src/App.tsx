@@ -7,6 +7,7 @@ import LearningPath from "./components/LearningPath";
 import LoginPage from "./components/LoginPage";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ProfilePage from "./components/ProfilePage";
 import RegistrationPage from "./components/RegistrationPage";
 import RouteTitle from "./components/RouteTitle";
 import SkillAssessment from "./components/SkillAssessment";
@@ -49,6 +50,7 @@ function AuthenticatedRoutes() {
       <Routes>
         <Route path="/assessment" element={<SkillAssessment />} />
         <Route path="/learning-path" element={<LearningPath />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/assessment" replace />} />
       </Routes>
     </ProtectedRoute>

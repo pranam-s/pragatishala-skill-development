@@ -104,7 +104,7 @@ uv run pytest                   # 146 tests, ≥90% line + branch coverage enfor
 cd frontend
 npm run lint
 npm run build                   # tsc + vite
-npm run test                    # 33 tests (Vitest + Testing Library)
+npm run test                    # 36 tests (Vitest + Testing Library)
 ```
 
 CI runs the same gates on every push (see `.github/workflows/ci.yml`).
