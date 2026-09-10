@@ -1,0 +1,61 @@
+# Limitations and evaluation
+
+Honest assessment of what this codebase does well and where it falls short.
+Last updated: 2026-09-11.
+
+## What is solid
+
+- **Backend correctness.** 146 tests, ~99% line and branch coverage on `app`
+  (≥90% enforced in CI), strict mypy, Ruff clean. API tests exercise the real
+  app (auth, ownership boundaries, validation, error paths) over ASGI.
+- **End-to-end verified.** The full journey (register → login → assessment →
+  learning path → resume → market → refresh → SSE) was exercised over live
+  HTTP, and through the Vite dev proxy exactly as the SPA calls it.
+- **Offline-first AI.** Every AI feature degrades deterministically; responses
+  record `engine_used`. Provider clients handle fenced JSON, bad bodies, HTTP
+  errors, and schema-invalid output with tests for each.
+- **Accessibility.** All interactive flows are labelled, keyboard-operable, and
+  announce errors via `role="alert"`; the primary user is an NVDA user and the
+  author treats a11y regressions as release blockers.
+
+## Known limitations
+
+1. **Coverage measurement needed `concurrency = ["greenlet"]`.** Without it,
+   SQLAlchemy's greenlet switches silently disarmed the tracer and ~10% of
+   executed lines went unmeasured (misleadingly LOW numbers, not high). If you
+   add new async/sqlalchemy machinery, re-check that endpoint bodies still
+   appear in coverage.
+2. **JWTs are not revocable.** No denylist; a stolen refresh token works until
+   expiry (7 days). Rotation/revocation is planned (see ADR 0002).
+3. **Tokens in localStorage.** XSS-amplified risk accepted for the MVP; no
+   third-party scripts ship, but HttpOnly cookies + CSRF defence is the real
+   fix (roadmap).
+4. **No rate limiting or account recovery.** Register/login endpoints are
+   unthrottled; there is no email verification or password reset.
+5. **Rule-based quality is heuristic.** The offline engine's skill detection is
+   phrase matching plus a ±30-char level window; it is deliberately
+   conservative and will miss unusual phrasings. `engine_used` tells you when
+   you are reading its output.
+6. **Single-process SSE.** Events do not cross process boundaries and are lost
+   on restart (ADR 0004). REST is the source of truth.
+7. **No Alembic migrations.** Destructive schema changes during development
+   currently mean deleting the dev database (ADR 0003).
+8. **Market data is curated, not live.** Offline market snapshots are hand
+   written INR ranges; only the LLM path can give fresher (still unverified)
+   figures. No job-board integrations yet.
+9. **Frontend coverage focuses on logic.** The API client, auth context, and
+   page behaviour are tested (31 tests); Navbar/Footer/route table are UI glue
+   deliberately left unmeasured — they contain no logic beyond markup. The
+   ≥90% rule is enforced on the backend `app` package; frontend coverage is
+   reported but not gated, with this justification.
+10. **No browser-level e2e (Playwright) yet.** Backend e2e runs over real HTTP
+   and frontend flows are tested with jsdom; a Playwright suite (including a
+   screen-reader smoke pass) is roadmap work.
+11. **MySQL path is untested.** The connection string is supported, but CI runs
+   SQLite only.
+
+## Evaluation against the PRD
+
+Phase 1 and Phase 2 acceptance criteria in [PRD.md](PRD.md) are met. Phase 3
+items are tracked in [roadmap.md](roadmap.md) with none marked done except the
+security partials listed there.

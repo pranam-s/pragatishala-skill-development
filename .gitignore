@@ -189,3 +189,7 @@ frontend/dist/
 frontend/coverage/
 frontend/test-results/
 frontend/playwright-report/
+
+# Runtime SQLite databases
+*.db
+*.db-journal
