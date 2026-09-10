@@ -1,11 +1,12 @@
-import { Box, Text } from '@chakra-ui/react';
+import { Container, Text } from "@chakra-ui/react";
 
-const Footer = () => {
+export default function Footer() {
   return (
-    <Box as="footer" py={4} textAlign="center" mt={8}>
-      <Text>&copy; {new Date().getFullYear()} PragatiShala. All rights reserved.</Text>
-    </Box>
+    <Container as="footer" centerContent py={6} mt={8}>
+      <Text fontSize="sm" color="fg.muted">
+        © {new Date().getFullYear()} PragatiShala — AI-powered skill development for Indian
+        learners.
+      </Text>
+    </Container>
   );
-};
-
-export default Footer;
+}
