@@ -1,0 +1,227 @@
+"""Tests for the rule-based skill engine and its AI fallback contract."""
+
+import pytest
+from app.ai.engine import RULE_BASED, SkillEngine, _bullets_from, _rule_based_assessment
+from app.ai.provider import AIError
+from app.schemas import AssessmentResult, LearningPathContent, MarketInsights, ResumeContent
+
+NARRATIVE = (
+    "I have 5 years of experience with Python and I am proficient in SQL. "
+    "I know a bit of Docker and I am learning Kubernetes for deployments."
+)
+
+
+def test_assessment_detects_skills_and_levels() -> None:
+    result = _rule_based_assessment(NARRATIVE, "Backend Developer")
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == "expert"  # 5 years
+    assert by_name["SQL"].level == "advanced"  # proficient
+    assert by_name["Docker"].level == "beginner"  # single mention
+    assert by_name["Kubernetes"].level == "beginner"  # learning
+    assert result.readiness_score <= 100
+    assert result.summary
+
+
+def test_assessment_no_target_role() -> None:
+    result = _rule_based_assessment(NARRATIVE, None)
+    assert "exploring directions" in result.summary
+
+
+def test_assessment_repeated_mentions_raise_level() -> None:
+    text = "I use Python. Python is great. I code Python every day."
+    result = _rule_based_assessment(text, None)
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == "advanced"  # 3 mentions
+    assert "3x" in by_name["Python"].evidence
+
+
+def test_assessment_unknown_role_still_scores() -> None:
+    result = _rule_based_assessment("I know Python and Excel.", "Xenoastronomy Consultant")
+    assert result.skills
+    assert 0 <= result.readiness_score <= 100
+
+
+def test_assessment_empty_text_is_safe() -> None:
+    result = _rule_based_assessment("Nothing here matches any known skill taxonomy entry.", None)
+    assert isinstance(result, AssessmentResult)
+
+
+def test_bullets_from_polishes_weak_verbs() -> None:
+    polished = _bullets_from("- worked on tickets\ndid reports\nShipped the feature")
+    assert "- Drove on tickets" in polished
+    assert "- Drove reports" in polished
+    assert "- Shipped the feature." in polished
+
+
+def test_bullets_from_empty_text() -> None:
+    assert _bullets_from("") == "- Delivered assigned outcomes."
+
+
+class _StubProvider:
+    """Provider double returning a canned result."""
+
+    name = "stub-llm"
+    model = "stub-1"
+
+    def __init__(self, response: object | None = None, error: Exception | None = None) -> None:
+        self._response = response
+        self._error = error
+
+    async def complete_json(self, system: str, user: str, schema: type) -> object:
+        del system, user, schema
+        if self._error is not None:
+            raise self._error
+        assert self._response is not None
+        return self._response
+
+
+class _WrongShapeProvider(_StubProvider):
+    async def complete_json(self, system: str, user: str, schema: type) -> object:
+        del system, user
+        return object()  # not an instance of any expected schema
+
+
+@pytest.fixture
+def ai_result() -> AssessmentResult:
+    return AssessmentResult(
+        summary="AI summary",
+        skills=[],
+        strengths=["Python"],
+        gaps=["SQL"],
+        recommended_roles=["Backend Developer"],
+        readiness_score=55,
+    )
+
+
+async def test_engine_uses_provider_result(ai_result: AssessmentResult) -> None:
+    engine = SkillEngine(_StubProvider(ai_result))  # type: ignore[arg-type]
+    outcome = await engine.analyze_skills(NARRATIVE, None)
+    assert outcome.value.summary == "AI summary"
+    assert outcome.engine_used == "stub-llm"
+
+
+async def test_engine_falls_back_on_provider_error(ai_result: AssessmentResult) -> None:
+    engine = SkillEngine(_StubProvider(error=AIError("boom")))  # type: ignore[arg-type]
+    outcome = await engine.analyze_skills(NARRATIVE, None)
+    assert outcome.engine_used == RULE_BASED
+    assert outcome.value.skills  # deterministic fallback produced content
+
+
+async def test_engine_falls_back_on_wrong_shape() -> None:
+    engine = SkillEngine(_WrongShapeProvider())  # type: ignore[arg-type]
+    outcome = await engine.analyze_skills(NARRATIVE, None)
+    assert outcome.engine_used == RULE_BASED
+
+
+async def test_engine_without_provider_is_offline() -> None:
+    engine = SkillEngine(None)
+    assert engine.provider_name == RULE_BASED
+    outcome = await engine.analyze_skills(NARRATIVE, None)
+    assert outcome.engine_used == RULE_BASED
+
+
+async def test_engine_learning_path_via_provider() -> None:
+    result = _rule_based_assessment(NARRATIVE, "Backend Developer")
+    ai_content = LearningPathContent(
+        headline="AI path",
+        target_role="Backend Developer",
+        total_estimated_hours=10,
+        modules=[
+            {
+                "title": "SQL",
+                "description": "Learn SQL",
+                "skills_covered": ["SQL"],
+                "estimated_hours": 10,
+                "resources": [],
+                "milestone": "Query like a pro",
+            }
+        ],
+        next_steps=["Practice"],
+    )
+    engine = SkillEngine(_StubProvider(ai_content))  # type: ignore[arg-type]
+    outcome = await engine.build_learning_path(result, "Backend Developer")
+    assert outcome.value.headline == "AI path"
+
+
+async def test_engine_resume_via_provider() -> None:
+    ai_content = ResumeContent(
+        headline="AI resume",
+        professional_summary="Great engineer.",
+        skills=["Python"],
+        experience=[],
+        education=[],
+        projects=[],
+    )
+    engine = SkillEngine(_StubProvider(ai_content))  # type: ignore[arg-type]
+    outcome = await engine.generate_resume("Asha", "Backend Developer", [], "", "", "")
+    assert outcome.value.headline == "AI resume"
+
+
+async def test_engine_market_via_provider() -> None:
+    ai_content = MarketInsights(
+        role="Backend Developer",
+        demand_level="high",
+        median_salary_range_inr="₹6-30 LPA",
+        growth_outlook="Strong",
+        top_skills=["Python"],
+        trending_skills=["FastAPI"],
+        typical_employers=["IT services"],
+        recommended_certifications=["AWS DVA"],
+        advice=["Build projects"],
+    )
+    engine = SkillEngine(_StubProvider(ai_content))  # type: ignore[arg-type]
+    outcome = await engine.market_insights("Backend Developer")
+    assert outcome.value.median_salary_range_inr == "₹6-30 LPA"
+
+
+async def test_rule_based_learning_path_cap_and_order() -> None:
+    result = _rule_based_assessment(NARRATIVE, "Backend Developer")
+    engine = SkillEngine(None)
+    outcome = await engine.build_learning_path(result, "Backend Developer")
+    content = outcome.value
+    assert isinstance(content, LearningPathContent)
+    assert 1 <= len(content.modules) <= 8
+    assert content.total_estimated_hours == sum(
+        module.estimated_hours for module in content.modules
+    )
+
+
+async def test_rule_based_learning_path_empty_result() -> None:
+    empty = AssessmentResult(
+        summary="", skills=[], strengths=[], gaps=[], recommended_roles=[], readiness_score=0
+    )
+    engine = SkillEngine(None)
+    outcome = await engine.build_learning_path(empty, None)
+    assert outcome.value.modules  # default modules applied
+
+
+async def test_rule_based_resume_fresh_graduate() -> None:
+    engine = SkillEngine(None)
+    outcome = await engine.generate_resume("", "Backend Developer", [], "", "", "")
+    content = outcome.value
+    assert isinstance(content, ResumeContent)
+    assert "Your Name" in content.headline
+    assert content.skills  # falls back to role requirements
+
+
+async def test_rule_based_market_known_and_unknown_role() -> None:
+    engine = SkillEngine(None)
+    known = await engine.market_insights("Data Analyst")
+    assert isinstance(known.value, MarketInsights)
+    unknown = await engine.market_insights("Chief Memelord")
+    assert unknown.value.role == "Technology Professional"  # fallback profile
+
+
+@pytest.mark.parametrize(
+    ("phrase", "expected"),
+    [
+        ("I have 6 years of experience with Docker.", "expert"),
+        ("I have 4 years of experience with Docker.", "advanced"),
+        ("I have 1 year of experience with Docker.", "intermediate"),
+        ("I have 6 months of exposure with Docker.", "beginner"),
+    ],
+)
+def test_assessment_experience_quantifies_level(phrase: str, expected: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Docker"].level == expected

@@ -1,0 +1,101 @@
+"""Application settings.
+
+All secrets are read from the environment (optionally via a local ``.env`` file
+that is git-ignored). There are no hardcoded keys anywhere in the codebase.
+
+Every environment variable is prefixed with ``PRAGATISHALA_`` (for example
+``PRAGATISHALA_JWT_SECRET_KEY``).
+"""
+
+from functools import lru_cache
+from typing import Literal
+
+from pydantic import SecretStr, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Runtime configuration sourced from the environment."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="PRAGATISHALA_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    app_name: str = "PragatiShala API"
+    app_version: str = "0.1.0"
+    debug: bool = False
+
+    # --- Database ---
+    # Default to a local SQLite database for development. For production set a
+    # MySQL URL such as: mysql+aiomysql://user:pass@host:3306/pragatishala
+    database_url: str = "sqlite+aiosqlite:///./pragatishala.db"
+
+    # --- Auth ---
+    jwt_secret_key: SecretStr
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_minutes: int = 7 * 24 * 60
+
+    # --- CORS ---
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+    # --- AI integration (Phase 2) ---
+    # "auto" picks the first provider whose API key is present in the
+    # environment; "rule_based" forces the deterministic offline engine.
+    ai_provider: Literal["auto", "openai", "anthropic", "rule_based"] = "auto"
+    openai_api_key: SecretStr | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+    anthropic_api_key: SecretStr | None = None
+    anthropic_base_url: str = "https://api.anthropic.com"
+    anthropic_model: str = "claude-sonnet-4-5"
+    ai_timeout_seconds: float = 30.0
+
+    # --- Market analysis cache ---
+    market_cache_minutes: int = 24 * 60
+
+    # --- Server-Sent Events ---
+    sse_keepalive_seconds: float = 15.0
+
+    @field_validator("jwt_secret_key")
+    @classmethod
+    def _strong_secret(cls, value: SecretStr) -> SecretStr:
+        """HS256 requires keys of at least 32 bytes (RFC 7518 section 3.2)."""
+        if len(value.get_secret_value().encode()) < 32:
+            msg = "PRAGATISHALA_JWT_SECRET_KEY must be at least 32 bytes long"
+            raise ValueError(msg)
+        return value
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _split_cors_origins(cls, value: object) -> object:
+        """Allow a comma-separated string (common for env vars)."""
+        if isinstance(value, str):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
+
+    @field_validator("access_token_expire_minutes", "refresh_token_expire_minutes")
+    @classmethod
+    def _positive_ttl(cls, value: int) -> int:
+        if value <= 0:
+            msg = "token expiry must be positive"
+            raise ValueError(msg)
+        return value
+
+    @field_validator("market_cache_minutes")
+    @classmethod
+    def _non_negative_cache(cls, value: int) -> int:
+        if value < 0:
+            msg = "market_cache_minutes must be zero or positive"
+            raise ValueError(msg)
+        return value
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Return the cached application settings."""
+    # Required fields (e.g. the JWT secret) are provided via environment variables.
+    return Settings()

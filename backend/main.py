@@ -1,7 +1,5 @@
-from fastapi import FastAPI
+"""ASGI entrypoint for ``uvicorn main:app`` (re-exports the real app)."""
 
-app = FastAPI()
+from app.main import app
 
-@app.get("/")
-def root():
-    return {"message": "Hello World"}
+__all__ = ["app"]

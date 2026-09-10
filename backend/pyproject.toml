@@ -1,0 +1,83 @@
+[project]
+name = "pragatishala-backend"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "argon2-cffi>=25.1.0",
+    "email-validator>=2.3.0",
+    "fastapi>=0.141.1",
+    "httpx>=0.28.1",
+    "pydantic-settings>=2.15.0",
+    "pyjwt>=2.13.0",
+    "python-multipart>=0.0.32",
+    "sqlalchemy[asyncio]>=2.0.52",
+    "uvicorn[standard]>=0.52.4",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "app"
+module-root = ""
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",      # pycodestyle
+    "F",           # pyflakes
+    "I",           # isort
+    "B",           # bugbear
+    "UP",          # pyupgrade
+    "SIM",         # simplify
+    "RUF",         # ruff-specific
+    "ASYNC",       # async correctness
+    "S",           # bandit (security)
+    "C4",          # comprehensions
+    "PIE",         # misc lints
+    "RET",         # return hygiene
+    "PTH",         # use pathlib
+]
+ignore = [
+    "S101",  # assert is how tests work; bandit rule suppressed project-wide
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106", "S107"]  # hardcoded test credentials are intentional
+"app/ai/skills_data.py" = ["E501"]  # curated data table: long unbreakable URLs and copy
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov=app --cov-branch --cov-report=term-missing --cov-fail-under=90 --strict-markers"
+filterwarnings = [
+    "error",
+]
+
+[tool.coverage.run]
+# SQLAlchemy's async engine executes sync code inside greenlets; without this
+# the tracer is disarmed across greenlet switches and request code goes unmeasured.
+concurrency = ["greenlet"]
