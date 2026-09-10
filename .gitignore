@@ -169,3 +169,23 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# --- PragatiShala project ---
+# Environment / secrets (never commit API keys)
+.env
+.env.*
+!.env.example
+# Python tooling
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+# Frontend build artifacts
+frontend/.vite/
+frontend/dist/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
