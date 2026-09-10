@@ -8,6 +8,7 @@ import LoginPage from "./components/LoginPage";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RegistrationPage from "./components/RegistrationPage";
+import RouteTitle from "./components/RouteTitle";
 import SkillAssessment from "./components/SkillAssessment";
 
 /** Public landing page for signed-out visitors. */
@@ -75,6 +76,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
+      <RouteTitle />
       <Navbar />
       <AppRoutes />
       <Footer />
