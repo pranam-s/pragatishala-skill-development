@@ -34,6 +34,10 @@ async def _isolated_environment(
     monkeypatch.setenv(
         "PRAGATISHALA_DATABASE_URL", f"sqlite+aiosqlite:///{(tmp_path / 'test.db').as_posix()}"
     )
+    # Generous rate limits so only the dedicated rate-limit tests trip them;
+    # the limiter state is reset for cross-test isolation.
+    monkeypatch.setenv("PRAGATISHALA_AUTH_RATE_LIMIT_PER_MINUTE", "1000")
+    monkeypatch.setenv("PRAGATISHALA_GENERATION_RATE_LIMIT_PER_MINUTE", "1000")
     for var in (
         "PRAGATISHALA_MARKET_CACHE_MINUTES",
         "PRAGATISHALA_SSE_KEEPALIVE_SECONDS",
@@ -42,6 +46,7 @@ async def _isolated_environment(
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr(security_module, "_hasher", _FAST_HASHER)
     get_settings.cache_clear()
+    app.state.rate_limiter.reset()
     await dispose_engine()
     yield
     await dispose_engine()

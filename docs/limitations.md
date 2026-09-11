@@ -30,12 +30,18 @@ Last updated: 2026-09-11.
 3. **Tokens in localStorage.** XSS-amplified risk accepted for the MVP; no
    third-party scripts ship, but HttpOnly cookies + CSRF defence is the real
    fix (roadmap).
-4. **No rate limiting or account recovery.** Register/login endpoints are
-   unthrottled; there is no email verification or password reset.
-5. **Rule-based quality is heuristic.** The offline engine's skill detection is
-   phrase matching plus a ±30-char level window; it is deliberately
-   conservative and will miss unusual phrasings. `engine_used` tells you when
-   you are reading its output.
+4. **Rate limiting is single-process; no account recovery.** Login/register/
+   refresh and the LLM-billed endpoints are throttled per client IP
+   (in-process sliding window, ADR 0007), but a multi-worker deployment needs
+   proxy-level limits; limits reset on restart. There is no email
+   verification, password reset, or account lockout.
+5. **Rule-based quality is heuristic.** The offline engine scores each skill
+   mention within its own sentence (level words and year figures bind to the
+   clause they appear in) and rejects ambiguous words ("go", "led", "c")
+   unless the sentence reads as skill talk. It is deliberately conservative:
+   it will miss unusual phrasings (e.g. "I use Go" without a skill-context
+   word) and unqualified claims default to beginner. `engine_used` tells you
+   when you are reading its output.
 6. **Single-process SSE.** Events do not cross process boundaries and are lost
    on restart (ADR 0004). REST is the source of truth.
 7. **No Alembic migrations.** Destructive schema changes during development

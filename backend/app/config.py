@@ -84,6 +84,18 @@ class Settings(BaseSettings):
     # --- Server-Sent Events ---
     sse_keepalive_seconds: float = 15.0
 
+    # --- Rate limiting (requests per minute per client; 0 disables a bucket) ---
+    auth_rate_limit_per_minute: int = 10
+    generation_rate_limit_per_minute: int = 15
+
+    @field_validator("auth_rate_limit_per_minute", "generation_rate_limit_per_minute")
+    @classmethod
+    def _non_negative_limit(cls, value: int) -> int:
+        if value < 0:
+            msg = "rate limits must be zero or positive"
+            raise ValueError(msg)
+        return value
+
     @field_validator("jwt_secret_key")
     @classmethod
     def _strong_secret(cls, value: SecretStr) -> SecretStr:
