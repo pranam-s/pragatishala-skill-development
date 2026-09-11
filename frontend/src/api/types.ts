@@ -35,7 +35,6 @@ export interface AssessmentResult {
 export interface Assessment {
   id: number;
   target_role: string | null;
-  status: string;
   result: AssessmentResult | null;
   engine_used: string;
   created_at: string;
@@ -62,7 +61,6 @@ export interface LearningPath {
   id: number;
   assessment_id: number | null;
   target_role: string | null;
-  status: string;
   content: LearningPathContent | null;
   engine_used: string;
   created_at: string;

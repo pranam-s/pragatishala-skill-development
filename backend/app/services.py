@@ -112,7 +112,6 @@ async def run_assessment(
         user_id=user.id,
         input_text=payload.input_text,
         target_role=target_role,
-        status="completed",
         result=result.model_dump(),
         engine_used=outcome.engine_used,
     )
@@ -185,7 +184,6 @@ async def generate_learning_path(
         user_id=user.id,
         assessment_id=assessment.id,
         target_role=target_role,
-        status="completed",
         content=generated.model_dump(),
         engine_used=outcome.engine_used,
     )

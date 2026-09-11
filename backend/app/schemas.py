@@ -100,7 +100,6 @@ class AssessmentRead(BaseModel):
 
     id: int
     target_role: str | None
-    status: str
     result: AssessmentResult | None
     engine_used: str
     created_at: datetime
@@ -147,7 +146,6 @@ class LearningPathRead(BaseModel):
     id: int
     assessment_id: int | None
     target_role: str | None
-    status: str
     content: LearningPathContent | None
     engine_used: str
     created_at: datetime

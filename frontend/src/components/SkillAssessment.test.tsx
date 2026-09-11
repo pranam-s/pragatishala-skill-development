@@ -14,7 +14,6 @@ afterEach(() => {
 const sampleAssessment: Assessment = {
   id: 7,
   target_role: "Data Analyst",
-  status: "completed",
   engine_used: "rule_based",
   created_at: "2026-09-10T12:00:00",
   result: {

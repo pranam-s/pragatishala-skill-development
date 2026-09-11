@@ -28,7 +28,6 @@ async def test_create_assessment(client) -> None:
     )
     assert response.status_code == 201
     body = response.json()
-    assert body["status"] == "completed"
     assert body["engine_used"] == "rule_based"
     result = body["result"]
     names = {skill["name"] for skill in result["skills"]}
