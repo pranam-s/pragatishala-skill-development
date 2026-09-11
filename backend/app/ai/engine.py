@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 
 from app.ai.provider import AIError, LLMProvider
-from app.ai.skills_data import find_skill, market_snapshot, role_profile
+from app.ai.skills_data import SKILLS, market_snapshot, role_profile
 from app.schemas import (
     AssessmentResult,
     LearningModule,
@@ -39,6 +39,18 @@ _LEVEL_WORDS: tuple[tuple[str, str], ...] = (
     ("beginner", "beginner"),
     ("basic", "beginner"),
     ("learning", "beginner"),
+)
+_SENTENCE_BREAK = re.compile(r"[.!?;\n]")
+
+# Aliases that double as ordinary English words ("ready to go", "LED lights",
+# "grade A B C") are accepted only when their sentence carries skill context:
+# a skill noun, a proficiency word, or an experience figure. Without the gate
+# the engine invents skills the narrative never claimed.
+_AMBIGUOUS_ALIASES: frozenset[str] = frozenset({"c", "go", "led"})
+_SKILL_CONTEXT_PATTERN = re.compile(
+    r"\b(?:skills?|languages?|programming|frameworks?|libraries?|stack|"
+    r"developers?|development|engineer|code|coding|databases?|experienced?"
+    r"|expertise|proficien\w*|certifications?|know|known|technolog\w*|tools?)"
 )
 
 
@@ -70,36 +82,118 @@ def _level_for(skill_text: str, mention_count: int, years: float | None) -> str:
     return "beginner"
 
 
+def _sentence_bounds(text: str, start: int, end: int) -> tuple[int, int]:
+    """Bounds of the sentence containing the span [start, end)."""
+    left = max((brk.end() for brk in _SENTENCE_BREAK.finditer(text, 0, start)), default=0)
+    nxt = _SENTENCE_BREAK.search(text, end)
+    right = nxt.start() if nxt else len(text)
+    return left, right
+
+
+def _mention_spans(text: str) -> list[tuple[int, int, str, str]]:
+    """Non-overlapping skill mentions as (start, end, canonical, alias) spans.
+
+    Longer aliases win: "core java" scores Java once instead of also matching
+    the bare "java" alias inside it.
+    """
+    candidates: list[tuple[int, int, str, str]] = []
+    for canonical, alias in _alias_pairs():
+        pattern = re.compile(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])")
+        for match in pattern.finditer(text):
+            candidates.append((match.start(), match.end(), canonical, alias))
+    candidates.sort(key=lambda span: (span[0], -span[1]))
+    spans: list[tuple[int, int, str, str]] = []
+    for span in candidates:
+        if spans and span[0] < spans[-1][1]:
+            continue
+        spans.append(span)
+    return spans
+
+
+def _is_skill_context(sentence: str) -> bool:
+    """True when a sentence reads as skill talk (skill nouns, levels, years)."""
+    return bool(
+        _SKILL_CONTEXT_PATTERN.search(sentence)
+        or _EXPERIENCE_PATTERN.search(sentence)
+        or any(re.search(rf"\b{word}\b", sentence) for word, _level in _LEVEL_WORDS)
+    )
+
+
+def _scope_bounds(
+    spans: list[tuple[int, int, str, str]], index: int, sentence_left: int, sentence_right: int
+) -> tuple[int, int]:
+    """Clip a sentence to the nearest mention of a *different* skill.
+
+    Proficiency words and experience figures are then read only inside these
+    bounds, so a neighbouring skill's phrase can never be attributed to the
+    skill being scored (a level word binds within its own clause).
+    """
+    start, _end, canonical, _alias = spans[index]
+    left, right = sentence_left, sentence_right
+    for other_start, other_end, other_canonical, _other in spans:
+        if other_canonical == canonical:
+            continue
+        if other_end <= start:
+            left = max(left, other_end)
+        else:
+            # Spans never overlap, so anything not fully to the left is fully
+            # to the right of this mention.
+            right = min(right, other_start)
+    return left, right
+
+
+def _score_mentions(text: str) -> dict[str, SkillScore]:
+    """Score every skill mention using only its own clause as evidence."""
+    lowered = text.lower()
+    spans = _mention_spans(lowered)
+    kept: list[tuple[int, int, str, str]] = []
+    for index, (start, end, _canonical, alias) in enumerate(spans):
+        if alias in _AMBIGUOUS_ALIASES:
+            left, right = _sentence_bounds(lowered, start, end)
+            if not _is_skill_context(lowered[left:right]):
+                continue
+        kept.append(spans[index])
+    spans = kept
+
+    scores: dict[str, SkillScore] = {}
+    for skill in SKILLS:
+        aliases = {alias.lower() for alias in (skill.name, *skill.aliases)}
+        hits_by_alias = {alias: sum(1 for span in spans if span[3] == alias) for alias in aliases}
+        if not any(hits_by_alias.values()):
+            continue
+        best_rank = 0
+        best_level = "beginner"
+        best_alias_hits = 1
+        for alias, hits in hits_by_alias.items():
+            if not hits:
+                continue
+            for index, (start, end, _canonical, span_alias) in enumerate(spans):
+                if span_alias != alias:
+                    continue
+                sentence_left, sentence_right = _sentence_bounds(lowered, start, end)
+                scope_left, scope_right = _scope_bounds(spans, index, sentence_left, sentence_right)
+                scope = lowered[scope_left:scope_right]
+                years_match = _EXPERIENCE_PATTERN.search(scope)
+                years = float(years_match.group("years")) if years_match else None
+                level = _level_for(scope, hits, years)
+                if _level_rank(level) > best_rank:
+                    best_rank = _level_rank(level)
+                    best_level = level
+                    best_alias_hits = hits
+        scores[skill.name] = SkillScore(
+            name=skill.name,
+            category=skill.category,
+            level=best_level,
+            evidence=f"mentioned {best_alias_hits}x",
+        )
+    return scores
+
+
 def _rule_based_assessment(input_text: str, target_role: str | None) -> AssessmentResult:
     """Deterministic skill assessment over free text."""
     profile = role_profile(target_role)
-    lowered = input_text.lower()
 
-    scores: dict[str, SkillScore] = {}
-
-    # Scan text for every canonical skill name and alias (aliases may contain
-    # spaces, so this is a phrase scan, not a word scan).
-    for canonical, alias in _alias_pairs():
-        hits = len(re.findall(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])", lowered))
-        if hits:
-            skill = find_skill(alias)
-            if skill is None:
-                continue
-            # Proficiency words and experience figures only count when they
-            # appear near the mention, not elsewhere in the narrative.
-            idx = lowered.find(alias)
-            window = lowered[max(0, idx - 30) : idx + len(alias) + 30]
-            years_match = _EXPERIENCE_PATTERN.search(window)
-            years = float(years_match.group("years")) if years_match else None
-            level = _level_for(window, hits, years)
-            existing = scores.get(canonical)
-            if existing is None or _level_rank(level) > _level_rank(existing.level):
-                scores[canonical] = SkillScore(
-                    name=skill.name,
-                    category=skill.category,
-                    level=level,
-                    evidence=f"mentioned {hits}x",
-                )
+    scores = _score_mentions(input_text)
 
     detected = sorted(scores.values(), key=lambda s: (-_level_rank(s.level), s.name))
     detected_names = {s.name for s in detected}
@@ -138,8 +232,6 @@ def _rule_based_assessment(input_text: str, target_role: str | None) -> Assessme
 
 
 def _alias_pairs() -> list[tuple[str, str]]:
-    from app.ai.skills_data import SKILLS
-
     return [
         (skill.name, alias.lower()) for skill in SKILLS for alias in (skill.name, *skill.aliases)
     ]

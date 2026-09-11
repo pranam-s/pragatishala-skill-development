@@ -218,6 +218,7 @@ async def test_rule_based_market_known_and_unknown_role() -> None:
         ("I have 6 years of experience with Docker.", "expert"),
         ("I have 4 years of experience with Docker.", "advanced"),
         ("I have 1 year of experience with Docker.", "intermediate"),
+        ("I have 0 years of experience with Docker.", "beginner"),
         ("I have 6 months of exposure with Docker.", "beginner"),
     ],
 )
@@ -225,3 +226,70 @@ def test_assessment_experience_quantifies_level(phrase: str, expected: str) -> N
     result = _rule_based_assessment(phrase, None)
     by_name = {skill.name: skill for skill in result.skills}
     assert by_name["Docker"].level == expected
+
+
+def test_multi_alias_skill_keeps_best_level_and_winning_evidence() -> None:
+    text = "I do advanced Python3. My py scripts are everywhere."
+    result = _rule_based_assessment(text, None)
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == "advanced"
+    assert "1x" in by_name["Python"].evidence  # winning alias: python3
+
+
+# --- AR-029: proficiency evidence must not cross clause/sentence boundaries ---
+
+
+def test_level_word_does_not_leak_across_sentences() -> None:
+    result = _rule_based_assessment("I do advanced Python. Also SQL.", None)
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == "advanced"
+    assert by_name["SQL"].level == "beginner"
+
+
+def test_years_do_not_leak_across_clauses() -> None:
+    result = _rule_based_assessment("After 4 years of SQL, I touched Python yesterday.", None)
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["SQL"].level == "advanced"
+    assert by_name["Python"].level == "beginner"
+
+
+def test_level_between_skills_binds_to_the_left_mention() -> None:
+    result = _rule_based_assessment("I know Python well beyond advanced. SQL too.", None)
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == "advanced"
+    assert by_name["SQL"].level == "beginner"
+
+
+# --- AR-030: ambiguous aliases must not invent skills from everyday phrases ---
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "We are ready to go home.",
+        "I also fix LED lights on weekends.",
+        "My teacher gave me grade A B C.",
+        "Let the traffic light go green.",
+        "The display has LED backlight.",
+        "Vitamin C is important.",
+    ],
+)
+def test_everyday_phrases_do_not_invent_skills(phrase: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    names = {skill.name for skill in result.skills}
+    assert not names & {"Go", "Leadership", "C"}
+
+
+@pytest.mark.parametrize(
+    ("phrase", "expected"),
+    [
+        ("I know Go and use it daily.", {"Go"}),
+        ("I led a team of engineers.", {"Leadership"}),
+        ("C programming was my first language.", {"C"}),
+        ("I write embedded code in C language.", {"C"}),
+    ],
+)
+def test_ambiguous_skills_detected_with_skill_context(phrase: str, expected: set[str]) -> None:
+    result = _rule_based_assessment(phrase, None)
+    names = {skill.name for skill in result.skills}
+    assert expected <= names

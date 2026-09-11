@@ -15,7 +15,7 @@ from app.ai.provider import (
 from app.config import Settings
 from pydantic import BaseModel, SecretStr
 
-SECRET = "x" * 32
+SECRET = "Qk7wR2tY9uP5mJ3nV8cX4bZ6dF8gH2sL"
 
 
 class _Box(BaseModel):
