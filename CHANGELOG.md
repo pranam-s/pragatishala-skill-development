@@ -58,6 +58,9 @@ Adversarial-review remediation pass (findings AR-001..AR-032 from
 - EXPERIENCE_LEVELS de-duplicated into frontend/src/api/types.ts (AR-009).
 - `.gitignore` trimmed to project-relevant entries; `.env.example` ships a
   denylisted placeholder that fails loudly (AR-020).
+- Catch blocks narrow with a single `instanceof Error` check; the redundant
+  `ApiError` narrowing (a subclass) was dropped in SkillAssessment and
+  ProfilePage (AR-035).
 - Finalization refresh: @chakra-ui/react 3.29 → 3.37, react/react-dom 19.2 →
   19.3, @types/react* 19.3, @types/node 24.13; backend `uv lock --upgrade`
   re-verified current. TypeScript stays ^6.0.3 (typescript-eslint 8.70.0
