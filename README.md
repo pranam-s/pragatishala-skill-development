@@ -47,8 +47,8 @@ job-board integrations, Docker/deployment packaging, Alembic migrations.
 
 ## Getting started
 
-Prerequisites: Python via [uv](https://docs.astral.sh/uv/) and Node.js
-≥ 20.19 (Vite 8's floor; any Node ≥ 22.12 also works).
+Prerequisites: Python via [uv](https://docs.astral.sh/uv/) and Node.js 24 LTS
+(enforced via `engines` in `frontend/package.json`).
 
 ### 1. Backend
 
