@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.config import get_settings
-from app.deps import CurrentUser, SessionDep
+from app.deps import CurrentUser, SessionDep, user_id_from_subject
+from app.models import User
 from app.schemas import RefreshRequest, RegisterRequest, TokenPair, UserRead
 from app.security import (
     TokenError,
@@ -60,7 +61,7 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenPair)
-async def refresh(payload: RefreshRequest) -> TokenPair:
+async def refresh(payload: RefreshRequest, session: SessionDep) -> TokenPair:
     """Exchange a valid refresh token for a fresh token pair."""
     try:
         subject = decode_token(payload.refresh_token, expected_type="refresh")
@@ -69,7 +70,16 @@ async def refresh(payload: RefreshRequest) -> TokenPair:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid or expired refresh token",
         ) from exc
-    return _token_pair(int(subject))
+
+    # A signed refresh token is not proof the account still exists: resolve
+    # the subject so deleted users cannot mint fresh token pairs.
+    user_id = user_id_from_subject(subject)
+    if user_id is None or await session.get(User, user_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalid or expired refresh token",
+        )
+    return _token_pair(user_id)
 
 
 @router.get("/me", response_model=UserRead)

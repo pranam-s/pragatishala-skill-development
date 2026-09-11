@@ -43,7 +43,7 @@ async def get_current_user(
     except TokenError as exc:
         raise credentials_exception from exc
 
-    user_id = int(subject) if subject.isdigit() else None
+    user_id = user_id_from_subject(subject)
     if user_id is None:
         raise credentials_exception
 
@@ -54,6 +54,11 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def user_id_from_subject(subject: str) -> int | None:
+    """Parse a JWT subject into a user id, or None when malformed."""
+    return int(subject) if subject.isdigit() else None
 
 
 async def get_user_by_email(session: AsyncSession, email: str) -> User | None:

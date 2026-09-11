@@ -118,6 +118,37 @@ async def test_refresh_rejects_garbage(client) -> None:
     assert response.status_code == 401
 
 
+async def test_refresh_rejects_deleted_user(client) -> None:
+    """A signed refresh token must not mint pairs for a deleted account."""
+    await register_user(client)
+    login = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "user1@example.com", "password": "super-secret-pass-123"},
+    )
+    refresh_token = login.json()["refresh_token"]
+
+    from app.database import get_session_factory
+    from app.models import User
+    from sqlalchemy import delete
+
+    async with get_session_factory()() as session:
+        await session.execute(delete(User).where(User.email == "user1@example.com"))
+        await session.commit()
+
+    response = await client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+    assert response.status_code == 401
+
+
+async def test_refresh_rejects_non_numeric_subject(client) -> None:
+    """A validly signed refresh token with a non-numeric sub is 401, not 500."""
+    settings = get_settings()
+    token = _create_token(
+        "admin", "refresh", timedelta(minutes=5), settings.jwt_secret_key, settings.jwt_algorithm
+    )
+    response = await client.post("/api/v1/auth/refresh", json={"refresh_token": token})
+    assert response.status_code == 401
+
+
 async def test_auth_me_roundtrip(client) -> None:
     await register_user(client, full_name="Asha")
     headers = await login_headers(client)
