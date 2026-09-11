@@ -4,8 +4,10 @@ from datetime import timedelta
 
 import jwt
 import pytest
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.security import (
+    _JWT_AUDIENCE,
+    _JWT_ISSUER,
     TokenError,
     _create_token,
     create_access_token,
@@ -14,6 +16,8 @@ from app.security import (
     hash_password,
     verify_password,
 )
+
+SECRET = "Qk7wR2tY9uP5mJ3nV8cX4bZ6dF8gH2sL"
 
 
 def test_password_roundtrip() -> None:
@@ -84,8 +88,57 @@ def test_missing_subject_rejected() -> None:
 
 
 def test_non_string_subject_rejected() -> None:
+    """Non-string sub is invalid per RFC 7519; PyJWT 2.14 enforces it."""
     settings = get_settings()
-    secret = settings.jwt_secret_key.get_secret_value()
-    token = jwt.encode({"sub": 42, "type": "access", "exp": 4102444800}, secret, algorithm="HS256")
+    token = jwt.encode(
+        {
+            "sub": 42,
+            "type": "access",
+            "exp": 4102444800,
+            "iat": 1700000000,
+            "jti": "crafted",
+            "iss": _JWT_ISSUER,
+            "aud": _JWT_AUDIENCE,
+        },
+        settings.jwt_secret_key.get_secret_value(),
+        algorithm="HS256",
+    )
     with pytest.raises(TokenError, match="invalid"):
         decode_token(token, expected_type="access")
+
+
+def test_foreign_audience_rejected() -> None:
+    """A token minted for another audience must not validate (AR-025)."""
+    settings = get_settings()
+    token = jwt.encode(
+        {
+            "sub": "42",
+            "type": "access",
+            "exp": 4102444800,
+            "iss": _JWT_ISSUER,
+            "aud": "someone-else",
+        },
+        settings.jwt_secret_key.get_secret_value(),
+        algorithm="HS256",
+    )
+    with pytest.raises(TokenError, match="invalid"):
+        decode_token(token, expected_type="access")
+
+
+def test_token_without_claims_rejected() -> None:
+    """Required claims (iss/aud/iat/exp/jti) missing means invalid (AR-025)."""
+    settings = get_settings()
+    token = jwt.encode(
+        {"sub": "42", "type": "access", "exp": 4102444800},
+        settings.jwt_secret_key.get_secret_value(),
+        algorithm="HS256",
+    )
+    with pytest.raises(TokenError, match="invalid"):
+        decode_token(token, expected_type="access")
+
+
+def test_jwt_algorithm_locked_to_hs_family() -> None:
+    with pytest.raises(ValueError, match="Input should be"):
+        Settings(jwt_secret_key=SECRET, jwt_algorithm="none")
+    with pytest.raises(ValueError, match="Input should be"):
+        Settings(jwt_secret_key=SECRET, jwt_algorithm="RS256")

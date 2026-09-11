@@ -244,3 +244,25 @@ def test_build_provider_explicit_openai() -> None:
 def test_build_provider_explicit_anthropic() -> None:
     provider = build_provider(_settings(ai_provider="anthropic", anthropic_api_key=SECRET))
     assert provider is not None and provider.name == "anthropic"
+
+
+async def test_openai_timeout_raises_ai_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Provider timeouts surface as AIError (engine then falls back)."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        del request
+        raise httpx.ReadTimeout("timed out")
+
+    _patch_http(monkeypatch, handler)
+    with pytest.raises(AIError, match="request failed"):
+        await _openai_provider().complete_json("sys", "usr", _Box)
+
+
+async def test_anthropic_timeout_raises_ai_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        del request
+        raise httpx.ReadTimeout("timed out")
+
+    _patch_http(monkeypatch, handler)
+    with pytest.raises(AIError, match="request failed"):
+        await _anthropic_provider().complete_json("sys", "usr", _Box)

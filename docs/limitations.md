@@ -42,22 +42,28 @@ Last updated: 2026-09-11.
    it will miss unusual phrasings (e.g. "I use Go" without a skill-context
    word) and unqualified claims default to beginner. `engine_used` tells you
    when you are reading its output.
-6. **Single-process SSE.** Events do not cross process boundaries and are lost
+6. **LLM prompt-injection defences are minimal.** User text is fenced in
+   `<user_data>` tags and system prompts instruct the model to treat that
+   content as data, but a determined injection can still try to skew the
+   model's prose. Blast radius is bounded: output is schema-validated and
+   rendered only back to the injecting user, and the shared market cache is
+   never fed user text.
+7. **Single-process SSE.** Events do not cross process boundaries and are lost
    on restart (ADR 0004). REST is the source of truth.
-7. **No Alembic migrations.** Destructive schema changes during development
+8. **No Alembic migrations.** Destructive schema changes during development
    currently mean deleting the dev database (ADR 0003).
-8. **Market data is curated, not live.** Offline market snapshots are hand
+9. **Market data is curated, not live.** Offline market snapshots are hand
    written INR ranges; only the LLM path can give fresher (still unverified)
    figures. No job-board integrations yet.
-9. **Frontend coverage focuses on logic.** The API client, auth context, and
+10. **Frontend coverage focuses on logic.** The API client, auth context, and
    page behaviour are tested (31 tests); Navbar/Footer/route table are UI glue
    deliberately left unmeasured — they contain no logic beyond markup. The
    ≥90% rule is enforced on the backend `app` package; frontend coverage is
    reported but not gated, with this justification.
-10. **No browser-level e2e (Playwright) yet.** Backend e2e runs over real HTTP
+11. **No browser-level e2e (Playwright) yet.** Backend e2e runs over real HTTP
    and frontend flows are tested with jsdom; a Playwright suite (including a
    screen-reader smoke pass) is roadmap work.
-11. **MySQL path is untested.** The connection string is supported, but CI runs
+12. **MySQL path is untested.** The connection string is supported, but CI runs
    SQLite only.
 
 ## Evaluation against the PRD

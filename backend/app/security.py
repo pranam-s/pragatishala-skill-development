@@ -11,7 +11,12 @@ from pydantic import SecretStr
 
 from app.config import get_settings
 
-_TOKEN_TYPES = Literal["access", "refresh"]
+_token_types = Literal["access", "refresh"]
+
+# Every token is bound to this issuer/audience pair and decode enforces both,
+# so tokens minted for (or by) another system never validate here (AR-025).
+_JWT_ISSUER = "pragatishala"
+_JWT_AUDIENCE = "pragatishala-clients"
 
 
 class TokenError(Exception):
@@ -36,7 +41,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def _create_token(
     subject: str,
-    token_type: _TOKEN_TYPES,
+    token_type: _token_types,
     expires_delta: timedelta,
     secret: SecretStr,
     algorithm: str,
@@ -45,6 +50,8 @@ def _create_token(
     payload: dict[str, Any] = {
         "sub": subject,
         "type": token_type,
+        "iss": _JWT_ISSUER,
+        "aud": _JWT_AUDIENCE,
         "iat": now,
         "exp": now + expires_delta,
         "jti": uuid.uuid4().hex,
@@ -76,12 +83,13 @@ def create_refresh_token(subject: str) -> str:
     )
 
 
-def decode_token(token: str, expected_type: _TOKEN_TYPES) -> str:
+def decode_token(token: str, expected_type: _token_types) -> str:
     """Validate *token* and return its subject.
 
     Raises:
         TokenError: when the token is malformed, expired, signed with another
-            key, or not of the expected type.
+            key, minted for another issuer/audience, or not of the expected
+            type.
     """
     settings = get_settings()
     try:
@@ -89,6 +97,9 @@ def decode_token(token: str, expected_type: _TOKEN_TYPES) -> str:
             token,
             settings.jwt_secret_key.get_secret_value(),
             algorithms=[settings.jwt_algorithm],
+            audience=_JWT_AUDIENCE,
+            issuer=_JWT_ISSUER,
+            options={"require": ["exp", "iat", "sub", "jti", "iss", "aud"]},
         )
     except jwt.ExpiredSignatureError as exc:
         msg = "token has expired"

@@ -59,7 +59,9 @@ class Settings(BaseSettings):
 
     # --- Auth ---
     jwt_secret_key: SecretStr
-    jwt_algorithm: str = "HS256"
+    # HMAC-SHA-2 family only: a free-text algorithm name would let a stray
+    # "none" (or an RS/HS confusion pair) reach jwt.encode/decode (AR-025).
+    jwt_algorithm: Literal["HS256", "HS384", "HS512"] = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_minutes: int = 7 * 24 * 60
 
