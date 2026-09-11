@@ -24,6 +24,11 @@ describe("RouteTitle", () => {
     expect(document.title).toBe("Sign in — PragatiShala");
   });
 
+  it("titles the profile page", () => {
+    renderAt("/profile");
+    expect(document.title).toBe("Profile — PragatiShala");
+  });
+
   it("falls back to the app name for unknown routes", () => {
     renderAt("/nowhere");
     expect(document.title).toBe("PragatiShala — PragatiShala");

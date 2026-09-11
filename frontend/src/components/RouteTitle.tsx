@@ -7,6 +7,7 @@ const TITLES: Record<string, string> = {
   "/register": "Create your account",
   "/assessment": "Skill assessment",
   "/learning-path": "Learning path",
+  "/profile": "Profile",
 };
 
 /**
