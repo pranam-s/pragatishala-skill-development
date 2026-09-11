@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.engine import RULE_BASED, SkillEngine
 from app.config import get_settings
+from app.deps import get_user_by_email
 from app.events import EventBus
 from app.models import Assessment, LearningPath, MarketReport, Resume, User
 from app.schemas import (
@@ -47,8 +48,6 @@ class NotFoundError(Exception):
 
 async def register_user(session: AsyncSession, payload: RegisterRequest) -> User:
     """Create a new user; raises :class:`AlreadyRegisteredError` on duplicates."""
-    from app.deps import get_user_by_email
-
     email = payload.email.lower()
     if await get_user_by_email(session, email) is not None:
         msg = f"an account with {email} already exists"
@@ -69,8 +68,6 @@ async def register_user(session: AsyncSession, payload: RegisterRequest) -> User
 
 async def authenticate_user(session: AsyncSession, email: str, password: str) -> User:
     """Verify credentials; raises :class:`InvalidCredentialsError` on failure."""
-    from app.deps import get_user_by_email
-
     user = await get_user_by_email(session, email)
     if user is None:
         # Burn comparable time to avoid leaking account existence via timing.

@@ -209,8 +209,10 @@ def _rule_based_assessment(input_text: str, target_role: str | None) -> Assessme
     required_total = len(profile.required)
     covered = sum(1 for name in profile.required if name in detected_names)
     readiness = int(100 * (covered / required_total)) if required_total else 40
-    # Soft bonus for adjacent skills so partial profiles still score sensibly.
-    readiness = min(100, readiness + 5 * min(len(recommended_missing), 2))
+    # Soft bonus for recommended skills actually covered, so the same required
+    # coverage ranks higher when adjacent skills are present (never lower).
+    recommended_covered = len(profile.recommended) - len(recommended_missing)
+    readiness = min(100, readiness + 5 * min(recommended_covered, 2))
 
     role_line = f"targeting {profile.title}" if target_role else "exploring directions"
     strongest = ", ".join(strengths) if strengths else "not yet evident"

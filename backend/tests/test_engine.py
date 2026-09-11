@@ -41,6 +41,19 @@ def test_assessment_unknown_role_still_scores() -> None:
     assert 0 <= result.readiness_score <= 100
 
 
+def test_recommended_skills_raise_readiness_monotonically() -> None:
+    # Data Analyst: required = SQL/Excel/Data Analysis/Data Viz/Statistics,
+    # recommended = Python/Pandas/Communication.
+    base = _rule_based_assessment("I know SQL, Excel, and Data Analysis.", "Data Analyst")
+    assert base.readiness_score == 60  # 3 of 5 required skills, no recommended
+    enriched = _rule_based_assessment(
+        "I know SQL, Excel, and Data Analysis. I use Python and Pandas daily.", "Data Analyst"
+    )
+    assert enriched.readiness_score == base.readiness_score + 10  # +5 per recommended, capped at 2
+    assert enriched.readiness_score == 70
+    assert set(enriched.gaps) == {"Data Visualization", "Statistics", "Communication"}
+
+
 def test_assessment_empty_text_is_safe() -> None:
     result = _rule_based_assessment("Nothing here matches any known skill taxonomy entry.", None)
     assert isinstance(result, AssessmentResult)
