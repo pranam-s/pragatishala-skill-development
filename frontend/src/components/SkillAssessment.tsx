@@ -13,7 +13,7 @@ import {
   Text,
   Textarea,
 } from "@chakra-ui/react";
-import { api, ApiError } from "../api/client";
+import { api } from "../api/client";
 import type { Assessment } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 
@@ -40,11 +40,7 @@ export default function SkillAssessment() {
       const result = await api.runAssessment(narrative, user?.target_role ?? null);
       setAssessment(result);
     } catch (cause) {
-      setError(
-        cause instanceof ApiError || cause instanceof Error
-          ? cause.message
-          : "Unable to run the assessment.",
-      );
+      setError(cause instanceof Error ? cause.message : "Unable to run the assessment.");
     } finally {
       setBusy(false);
     }

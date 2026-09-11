@@ -9,7 +9,6 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { ApiError } from "../api/client";
 import { EXPERIENCE_LEVELS } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 
@@ -40,9 +39,7 @@ export default function ProfilePage() {
       });
       setSaved(true);
     } catch (cause) {
-      setError(
-        cause instanceof ApiError || cause instanceof Error ? cause.message : "Unable to save.",
-      );
+      setError(cause instanceof Error ? cause.message : "Unable to save.");
     } finally {
       setBusy(false);
     }
