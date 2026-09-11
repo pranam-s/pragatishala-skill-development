@@ -67,3 +67,17 @@ export interface LearningPath {
   engine_used: string;
   created_at: string;
 }
+
+/**
+ * Experience levels, mirrored from the backend `Literal` in
+ * backend/app/schemas.py (single source of truth: keep in sync).
+ */
+export const EXPERIENCE_LEVELS = [
+  { value: "fresher", label: "Fresher" },
+  { value: "student", label: "Student" },
+  { value: "junior", label: "Junior (1-3 years)" },
+  { value: "mid", label: "Mid-level (3-7 years)" },
+  { value: "senior", label: "Senior (7+ years)" },
+] as const;
+
+export type ExperienceLevel = (typeof EXPERIENCE_LEVELS)[number]["value"];

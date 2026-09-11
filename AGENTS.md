@@ -89,7 +89,7 @@ throughout development. Current-state detail lives in [README.md](README.md),
     (SQLite dev / MySQL-ready), strict mypy, Ruff, 146 pytest tests with ~99%
     line+branch coverage (≥90% enforced). See ADR 0001–0005.
 *   **Frontend:** React 19 + Chakra UI v3 + React Router; typed API client with
-    token refresh; AuthContext session bootstrap; 31 Vitest tests; ESLint and
+    token refresh; AuthContext session bootstrap; 37 Vitest tests; ESLint and
     `tsc` strict clean. Note: the earlier tracker claim that the frontend "was
     running successfully" was inaccurate — the v2-era code never compiled
     against the installed v3 library; it was rebuilt on 2026-09-11.

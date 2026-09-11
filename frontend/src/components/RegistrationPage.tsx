@@ -2,15 +2,9 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { Button, Field, Heading, Input, Link, NativeSelect, Stack, Text } from "@chakra-ui/react";
+import { EXPERIENCE_LEVELS } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 
-const EXPERIENCE_LEVELS = [
-  { value: "fresher", label: "Fresher" },
-  { value: "student", label: "Student" },
-  { value: "junior", label: "Junior (1-3 years)" },
-  { value: "mid", label: "Mid-level (3-7 years)" },
-  { value: "senior", label: "Senior (7+ years)" },
-] as const;
 
 /**
  * Registration page. Creates the account, signs the user in, and routes them

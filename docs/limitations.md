@@ -56,7 +56,7 @@ Last updated: 2026-09-11.
    written INR ranges; only the LLM path can give fresher (still unverified)
    figures. No job-board integrations yet.
 10. **Frontend coverage focuses on logic.** The API client, auth context, and
-   page behaviour are tested (31 tests); Navbar/Footer/route table are UI glue
+   page behaviour are tested (37 tests); Navbar/Footer/route table are UI glue
    deliberately left unmeasured — they contain no logic beyond markup. The
    ≥90% rule is enforced on the backend `app` package; frontend coverage is
    reported but not gated, with this justification.

@@ -84,7 +84,7 @@ post-MVP step ([adr/0003](adr/0003-database-migrations.md)).
   login, registration (auto sign-in), logout. Tokens persist in localStorage
   ([adr/0002](adr/0002-authentication.md)).
 - **Routing** — public (`/`, `/login`, `/register`) and authenticated
-  (`/assessment`, `/learning-path`) routes; `ProtectedRoute` redirects
+  (`/assessment`, `/learning-path`, `/profile`) routes; `ProtectedRoute` redirects
   anonymous visitors to `/login` with a `from` location for return.
 - **Accessibility** — Chakra `Field` label association, `role="alert"` error
   regions, `aria-live="polite"` status regions, `aria-current="page"` nav,
