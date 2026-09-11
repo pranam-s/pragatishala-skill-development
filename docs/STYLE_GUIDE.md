@@ -42,7 +42,7 @@ judgement parts.
 
 ### Tooling
 
-- ESLint 9 flat config + `typescript-eslint` + react-hooks/react-refresh
+- ESLint 10 flat config + `typescript-eslint` + react-hooks/react-refresh
   plugins; `tsc -b` strict. (Biome was considered; ESLint was already
   configured with the needed React plugins — one linter, used deeply.)
 - Vitest + Testing Library. Query by role/label (never test-id) so tests

@@ -54,10 +54,13 @@ only (`build_provider` reads `Settings`).
 
 - Passwords: Argon2id (`argon2-cffi`), constant-shape verification; unknown
   accounts burn a hash comparison to avoid user-enumeration timing leaks.
-- Tokens: HS256 JWTs with `sub` (user id), `type` (access|refresh), `exp`,
-  `jti`. `decode_token` rejects wrong types, expired/invalid tokens, and
-  missing subjects. The signing secret must be ≥32 bytes (enforced in
-  `Settings`).
+- Tokens: HS-family JWTs (HS256 by default; `jwt_algorithm` is pinned to
+  HS256/HS384/HS512) carrying `sub` (user id), `type` (access|refresh), `exp`,
+  `iat`, `jti`, `iss`, `aud`. `decode_token` enforces issuer and audience,
+  requires those claims plus `exp`/`iat`/`sub`/`jti`, and rejects wrong types,
+  expired/invalid tokens, and missing subjects. The signing secret must be
+  ≥32 bytes with an entropy floor (enforced in `Settings`,
+  [adr/0006](adr/0006-jwt-secret-policy.md)).
 - Endpoints: `POST /auth/register`, `POST /auth/login` (OAuth2 form),
   `POST /auth/refresh`, `GET /auth/me`, `GET/PATCH /users/me`.
 

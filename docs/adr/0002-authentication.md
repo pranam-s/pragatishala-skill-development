@@ -12,11 +12,15 @@ client flow (no silent redirects, explicit error announcements).
 
 - OAuth2 password flow (`POST /auth/login` with form credentials) returning an
   access token (30 min) + refresh token (7 days), both HS256 JWTs carrying
-  `sub`, `type`, `exp`, `jti`.
+  `sub`, `type`, `exp`, `jti` — extended 2026-09 (AR-025) to also carry and
+  require `iss`/`aud`/`iat`, with the algorithm pinned to the HS family, so
+  tokens minted for another system never validate here.
 - Passwords hashed with Argon2id via `argon2-cffi`; unknown accounts perform a
   dummy verify to equalize timing.
 - The signing secret must be ≥32 bytes (RFC 7518 for HS256); enforced by a
-  `Settings` validator so the app refuses to boot with a weak key.
+  `Settings` validator so the app refuses to boot with a weak key (tightened
+  by [ADR 0006](0006-jwt-secret-policy.md) with a placeholder denylist and
+  entropy floor).
 - The SPA stores both tokens in `localStorage` and injects the access token on
   every request; a 401 triggers exactly one refresh + retry. Trade-off: tokens
   are readable by page JS (XSS-amplified). Mitigations for this MVP: strict

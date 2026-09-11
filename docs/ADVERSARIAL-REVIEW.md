@@ -410,5 +410,21 @@ limiting) and re-scoping the rule engine's failure modes.**
   error paths are untested (AR-032).
 - **Process**: 3 doc-drift items (AR-014, AR-015, AR-016) trace to the last
   commit adding the profile page without sweeping the docs; a post-feature
-  doc grep (`RouteTitle`, architecture routing, test counts) would have
-  caught all three.
+  doc grep (`RouteTitle`, architecture routing, test counts) would have caught
+  all three.
+
+## Publication finalization pass (2026-09-12)
+
+A hostile re-read of the remediated codebase plus dependency/docs verification
+found two new items; both are fixed and this section is their record.
+
+| ID | Sev | Class | Location | Finding | Resolution |
+|---|---|---|---|---|---|
+| AR-033 | P3 | logic-engine | `backend/app/ai/engine.py` (`_rule_based_assessment`) | Readiness "soft bonus" counted *missing* recommended skills, so two candidates with identical required coverage ranked the one knowing fewer adjacent skills higher | Bonus now counts recommended skills actually covered (capped at +10); regression test pins exact scores and monotonicity |
+| AR-034 | P3 | deps-frontend | `frontend/package.json` / `package-lock.json` | Minors drifted again since the remediation pass (@chakra-ui/react 3.29→3.37, react 19.2→19.3, @types/* behind) | `npm update` within ranges; backend `uv lock --upgrade --dry-run` re-verified current; TS 7 ceiling re-checked against typescript-eslint 8.70.0 peer range (`<6.1.0`) |
+
+Everything else the review marked verified-good held under re-inspection:
+JWT `iss`/`aud` requirement and HS-only algorithm pin, deleted-user refresh
+rejection, rate-limit middleware inside CORS (429s carry CORS headers), SSE
+per-user auth, ownership checks on every read/update, prompt fencing, and the
+placeholder-secret boot rejection.

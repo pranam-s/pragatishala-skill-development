@@ -63,7 +63,8 @@ not teach.
 - Performance optimization — not started (current scale is fine for dev).
 - Additional integrations (job boards, LinkedIn) — not started.
 - Enhanced security — partial: strong hashing, expiry, ownership checks, CORS
-  allow-list, env-only secrets done; rate limiting and account recovery missing.
+  allow-list, env-only secrets, and rate limiting done; account recovery
+  (email verification, password reset, token revocation) missing.
 
 ## Non-functional requirements
 

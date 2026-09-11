@@ -1,11 +1,11 @@
 # Limitations and evaluation
 
 Honest assessment of what this codebase does well and where it falls short.
-Last updated: 2026-09-11.
+Last updated: 2026-09-12.
 
 ## What is solid
 
-- **Backend correctness.** 199 tests, ~99% line and branch coverage on `app`
+- **Backend correctness.** 200 tests, ~99% line and branch coverage on `app`
   (≥90% enforced in CI), strict mypy, Ruff clean. API tests exercise the real
   app (auth, ownership boundaries, validation, error paths) over ASGI.
 - **End-to-end verified.** The full journey (register → login → assessment →

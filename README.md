@@ -42,12 +42,13 @@ job-board integrations, Docker/deployment packaging, Alembic migrations.
 | Auth     | JWT (PyJWT), Argon2id password hashing                                |
 | AI       | OpenAI-compatible + Anthropic providers, rule-based offline fallback  |
 | Tooling  | uv (deps/lock), Ruff (lint+format), mypy (strict), pytest ≥90% branch coverage |
-| Frontend | React 19, TypeScript, Vite 7, Chakra UI v3, React Router 7            |
+| Frontend | React 19, TypeScript, Vite 8, Chakra UI v3, React Router 7            |
 | Tests    | pytest (backend), Vitest + Testing Library (frontend)                 |
 
 ## Getting started
 
-Prerequisites: Python via [uv](https://docs.astral.sh/uv/) and Node.js ≥ 20.
+Prerequisites: Python via [uv](https://docs.astral.sh/uv/) and Node.js
+≥ 20.19 (Vite 8's floor; any Node ≥ 22.12 also works).
 
 ### 1. Backend
 
@@ -98,7 +99,7 @@ Keys are read from the environment only — never hardcoded, never committed.
 cd backend
 uv run ruff check app tests && uv run ruff format --check app tests
 uv run mypy                     # strict
-uv run pytest                   # 199 tests, ≥90% line + branch coverage enforced
+uv run pytest                   # 200 tests, ≥90% line + branch coverage enforced
 
 # Frontend
 cd frontend

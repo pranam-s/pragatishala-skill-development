@@ -7,7 +7,8 @@ versioning follows [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — 2026-09-12
 
 Adversarial-review remediation pass (findings AR-001..AR-032 from
-`docs/ADVERSARIAL-REVIEW.md`).
+`docs/ADVERSARIAL-REVIEW.md`) plus the publication finalization pass
+(AR-033, AR-034).
 
 ### Security
 - JWT secrets: placeholder denylist + entropy floor; copied `.env.example`
@@ -24,6 +25,10 @@ Adversarial-review remediation pass (findings AR-001..AR-032 from
   instructions (AR-026).
 
 ### Fixed
+- Readiness score: the soft bonus counted *missing* recommended skills, so
+  extra adjacent knowledge could lower a candidate's score relative to an
+  identical profile without it; it now counts recommended skills actually
+  covered, capped at +10 (AR-033).
 - Rule-based engine: proficiency evidence (level words, year figures) binds
   only to the skill mentioned in the same sentence - the old ±30-char window
   leaked attributes across skills (AR-029).
@@ -53,6 +58,11 @@ Adversarial-review remediation pass (findings AR-001..AR-032 from
 - EXPERIENCE_LEVELS de-duplicated into frontend/src/api/types.ts (AR-009).
 - `.gitignore` trimmed to project-relevant entries; `.env.example` ships a
   denylisted placeholder that fails loudly (AR-020).
+- Finalization refresh: @chakra-ui/react 3.29 → 3.37, react/react-dom 19.2 →
+  19.3, @types/react* 19.3, @types/node 24.13; backend `uv lock --upgrade`
+  re-verified current. TypeScript stays ^6.0.3 (typescript-eslint 8.70.0
+  peer-caps typescript <6.1.0 — re-checked against the live registry)
+  (AR-034).
 
 ### Testing
 - hypothesis property suite: JWT round-trips, readiness bounds, engine
@@ -62,7 +72,7 @@ Adversarial-review remediation pass (findings AR-001..AR-032 from
   provider timeouts for both providers (AR-032); e2e smoke script now
   re-verifies SSE (401/200), ownership boundaries, resume PATCH, and
   profile PATCH over live HTTP (AR-019).
-- Backend: 199 tests, 99.28% line+branch coverage. Frontend: 37 tests.
+- Backend: 200 tests, 99.28% line+branch coverage. Frontend: 37 tests.
 - Mutation testing assessed: mutmut 3.x needs Linux/WSL (fork support);
   wired as CI follow-up (README, roadmap).
 

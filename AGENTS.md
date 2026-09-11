@@ -74,20 +74,20 @@ throughout development. Current-state detail lives in [README.md](README.md),
 
 ### Not implemented (tracked in docs/roadmap.md)
 
-*   OAuth social login, email verification, password reset, rate limiting,
-    refresh-token revocation.
+*   OAuth social login, email verification, password reset, refresh-token
+    revocation.
 *   Alembic migrations, Redis-backed event bus, Docker/packaging, CI deployment.
 *   Progress analytics, interview prep, job-board integrations, multi-language
     UI, resume PDF export.
 
-## Current Status (updated 2026-09-11)
+## Current Status (updated 2026-09-12)
 
 *   **Overall:** Phase 1 + Phase 2 functional end-to-end. Full user journey
     (register → login → assessment → learning path → resume → market →
     refresh → SSE) verified over live HTTP and through the Vite dev proxy.
 *   **Backend:** FastAPI app factory (`app/main.py`), async SQLAlchemy
-    (SQLite dev / MySQL-ready), strict mypy, Ruff, 199 pytest tests with ~99%
-    line+branch coverage (≥90% enforced). See ADR 0001–0005.
+    (SQLite dev / MySQL-ready), strict mypy, Ruff, 200 pytest tests with ~99%
+    line+branch coverage (≥90% enforced). See ADR 0001–0007.
 *   **Frontend:** React 19 + Chakra UI v3 + React Router; typed API client with
     token refresh; AuthContext session bootstrap; 37 Vitest tests; ESLint and
     `tsc` strict clean. Note: the earlier tracker claim that the frontend "was
@@ -97,5 +97,5 @@ throughout development. Current-state detail lives in [README.md](README.md),
     (`.github/workflows/ci.yml`). Known subtlety: backend coverage requires
     `concurrency = ["greenlet"]` (see docs/limitations.md #1).
 *   **Known gaps:** listed honestly in docs/limitations.md (token revocation,
-    rate limiting, no Playwright e2e yet, MySQL untested in CI, rule-based
-    engine heuristics).
+    no Playwright e2e yet, MySQL untested in CI, rule-based engine
+    heuristics).
