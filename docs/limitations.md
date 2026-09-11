@@ -5,7 +5,7 @@ Last updated: 2026-09-11.
 
 ## What is solid
 
-- **Backend correctness.** 146 tests, ~99% line and branch coverage on `app`
+- **Backend correctness.** 199 tests, ~99% line and branch coverage on `app`
   (≥90% enforced in CI), strict mypy, Ruff clean. API tests exercise the real
   app (auth, ownership boundaries, validation, error paths) over ASGI.
 - **End-to-end verified.** The full journey (register → login → assessment →

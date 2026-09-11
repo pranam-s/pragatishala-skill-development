@@ -86,7 +86,7 @@ throughout development. Current-state detail lives in [README.md](README.md),
     (register → login → assessment → learning path → resume → market →
     refresh → SSE) verified over live HTTP and through the Vite dev proxy.
 *   **Backend:** FastAPI app factory (`app/main.py`), async SQLAlchemy
-    (SQLite dev / MySQL-ready), strict mypy, Ruff, 146 pytest tests with ~99%
+    (SQLite dev / MySQL-ready), strict mypy, Ruff, 199 pytest tests with ~99%
     line+branch coverage (≥90% enforced). See ADR 0001–0005.
 *   **Frontend:** React 19 + Chakra UI v3 + React Router; typed API client with
     token refresh; AuthContext session bootstrap; 37 Vitest tests; ESLint and

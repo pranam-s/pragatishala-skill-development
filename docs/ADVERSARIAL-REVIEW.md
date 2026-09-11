@@ -1,5 +1,18 @@
 # Adversarial Review — pragatishala-skill-development
 
+> **Remediation status (2026-09-12):** findings AR-001…AR-004, AR-006…AR-023,
+> AR-025…AR-026, AR-028…AR-032 are fixed; AR-005's same-major drift was
+> cleared by `npm audit fix` + toolchain refresh; AR-007 fixed. Remaining
+> open items (deliberate, tracked):
+> - **AR-024** — logout is client-side, no revocation: documented trade-off
+>   (ADR 0002); rotation/revocation stays Phase-3 roadmap security work.
+> - **AR-027** — `/healthz` + `/api/docs` exposure: production-guide item,
+>   noted in roadmap Ops.
+> - **AR-031 (mutation testing)** — hypothesis properties shipped; mutmut
+>   needs Linux/WSL (fork support), wired as CI follow-up (README, roadmap).
+>
+> See CHANGELOG "Unreleased" for the full change list.
+
 - **Reviewer:** independent adversarial review pass (ZCode agent)
 - **Date:** 2026-09-11 (IST)
 - **Commit reviewed:** `a46f9be` (tree clean at review start)

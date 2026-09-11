@@ -98,13 +98,13 @@ Keys are read from the environment only — never hardcoded, never committed.
 cd backend
 uv run ruff check app tests && uv run ruff format --check app tests
 uv run mypy                     # strict
-uv run pytest                   # 146 tests, ≥90% line + branch coverage enforced
+uv run pytest                   # 199 tests, ≥90% line + branch coverage enforced
 
 # Frontend
 cd frontend
 npm run lint
 npm run build                   # tsc + vite
-npm run test                    # 36 tests (Vitest + Testing Library)
+npm run test                    # 37 tests (Vitest + Testing Library)
 ```
 
 CI runs the same gates on every push (see `.github/workflows/ci.yml`).
