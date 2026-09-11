@@ -109,6 +109,29 @@ npm run test                    # 36 tests (Vitest + Testing Library)
 
 CI runs the same gates on every push (see `.github/workflows/ci.yml`).
 
+### Property and mutation testing
+
+In addition to the conventional suite, the backend carries hypothesis
+property tests (`backend/tests/test_properties.py`) covering JWT round-trips,
+readiness-score bounds, rule-engine determinism, scope isolation in the skill
+engine, and tolerant LLM-JSON extraction.
+
+Mutation testing was assessed (adversarial review AR-031: ~1,200 statements,
+~30 s suite — well within a bounded run) but is **not wired in on this host**:
+the current tool, mutmut 3.x, requires process forking and needs WSL on
+Windows, while CI runs on Ubuntu where it would work. When a Linux
+environment is available:
+
+```bash
+cd backend
+uv add --group mutation "mutmut>=3.7.0"
+# [tool.mutmut] source_paths = ["app/"], pytest_add_cli_args_test_selection = ["tests/"]
+uv run --group mutation mutmut run
+uv run --group mutation mutmut browse   # triage survivors: fix or justify each
+```
+
+This is tracked as follow-up work in `docs/roadmap.md`.
+
 ## Project layout
 
 ```

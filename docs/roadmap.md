@@ -5,7 +5,9 @@ Ordered by value per unit of risk. Items move to ADRs/PRD when they start.
 ## Phase 3 — Platform enhancement (next up)
 
 1. **Security hardening**
-   - Rate limiting on auth endpoints (e.g. slowapi) and generic request limits.
+   - ~~Rate limiting on auth endpoints~~ — shipped: in-process sliding-window
+     middleware on the auth + LLM-billed endpoints (ADR 0007); multi-worker
+     deployments still need proxy-level limits.
    - Refresh-token rotation with server-side revocation (denylist table).
    - Password reset + email verification (requires an email transport choice).
    - Move tokens to HttpOnly cookies behind same-site deployment + CSRF defence.
@@ -16,6 +18,10 @@ Ordered by value per unit of risk. Items move to ADRs/PRD when they start.
 4. **Browser e2e** — Playwright suite covering register → assess → learning
    path; includes a keyboard-only pass. Schedule a manual NVDA pass per
    release.
+5. **Mutation testing in CI** — hypothesis property tests have shipped
+   (`backend/tests/test_properties.py`); mutmut 3.x needs a Linux/WSL
+   environment (fork support), so wire `mutmut run` into the GitHub Actions
+   workflow and triage survivors.
 
 ## Phase 4 — Product depth
 
