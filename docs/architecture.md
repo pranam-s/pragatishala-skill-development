@@ -101,3 +101,13 @@ post-MVP step ([adr/0003](adr/0003-database-migrations.md)).
   validators enforce invariants (positive TTLs, strong secret).
 - Determinism: the offline engine is pure functions over curated data — the
   entire platform is demonstrable with zero network access.
+
+## ADR index
+
+1. [Backend stack: Python 3.13 + FastAPI, managed with uv](adr/0001-backend-stack.md)
+2. [Authentication: JWT pairs, Argon2id, localStorage tokens](adr/0002-authentication.md)
+3. [Database: create_all now, Alembic later](adr/0003-database-migrations.md)
+4. [Realtime: in-process SSE bus, Redis pub/sub later](adr/0004-realtime.md)
+5. [AI: provider-agnostic clients with deterministic offline fallback](adr/0005-ai-fallback.md)
+6. [JWT signing secret policy: placeholders and entropy rejected](adr/0006-jwt-secret-policy.md)
+7. [In-process sliding-window rate limiting](adr/0007-rate-limiting.md)
