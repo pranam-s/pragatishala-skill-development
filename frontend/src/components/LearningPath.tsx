@@ -90,7 +90,7 @@ export default function LearningPathPage() {
                 {content.modules.map((module, index) => (
                   <Stack
                     as="li"
-                    key={module.title}
+                    key={`${index}-${module.title}`}
                     gap={1}
                     py={3}
                     borderTopWidth="1px"
@@ -108,8 +108,8 @@ export default function LearningPathPage() {
                     </Text>
                     {module.resources.length ? (
                       <List.Root gap={1} pl={4} mt={1}>
-                        {module.resources.map((resource) => (
-                          <List.Item key={resource}>
+                        {module.resources.map((resource, resourceIndex) => (
+                          <List.Item key={`${resourceIndex}-${resource}`}>
                             <Link
                               href={resource}
                               target="_blank"
@@ -130,8 +130,8 @@ export default function LearningPathPage() {
                 <Stack gap={2}>
                   <Heading size="md">Next steps</Heading>
                   <List.Root gap={1} pl={4}>
-                    {content.next_steps.map((step) => (
-                      <List.Item key={step}>{step}</List.Item>
+                    {content.next_steps.map((step, stepIndex) => (
+                      <List.Item key={`${stepIndex}-${step}`}>{step}</List.Item>
                     ))}
                   </List.Root>
                 </Stack>

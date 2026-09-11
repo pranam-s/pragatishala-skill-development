@@ -66,7 +66,7 @@ export default function SkillAssessment() {
           </Text>
         ) : null}
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit}>
           <Field.Root id="assessment-input" required>
             <Field.Label>Your skills and experience</Field.Label>
             <Textarea
