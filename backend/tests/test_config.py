@@ -1,10 +1,23 @@
 """Tests for app.config."""
 
+import secrets
+
 import pytest
 from app.config import Settings, get_settings
 from pydantic import SecretStr, ValidationError
 
-VALID = {"jwt_secret_key": "x" * 32}
+# Random-looking 32+ char secrets (single repeated characters are rejected as
+# low-entropy, so tests must use realistic keys).
+VALID = {"jwt_secret_key": "Zk9xQ2wR7tY5uJ8mN3vP6bC4dF7gH1sL"}
+PLACEHOLDERS = [
+    "change-me-at-least-32-bytes-long",
+    "change-me-generate-a-real-secret-with-secrets-token-urlsafe",
+    "changeme-changeme-changeme-changeme",
+    "your-256-bit-secret-your-256-bit-secret",
+    "super-secret-key-super-secret-key-123",
+    "my-secret-key-my-secret-key-123456",
+    "dummy-signing-key-for-local-development-only",
+]
 
 
 def test_defaults() -> None:
@@ -32,6 +45,39 @@ def test_missing_secret_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_weak_secret_rejected() -> None:
     with pytest.raises(ValidationError, match="at least 32 bytes"):
         Settings(jwt_secret_key="short")
+
+
+@pytest.mark.parametrize("placeholder", PLACEHOLDERS)
+def test_placeholder_secret_rejected(placeholder: str) -> None:
+    """A copied example value must never validate: it is publicly known."""
+    with pytest.raises(ValidationError, match="publicly-known placeholder"):
+        Settings(jwt_secret_key=placeholder)
+
+
+def test_placeholder_with_different_case_or_padding_rejected() -> None:
+    for variant in ("  CHANGE-ME-AT-LEAST-32-BYTES-LONG", "Change-Me-At-Least-32-Bytes-Long\n"):
+        with pytest.raises(ValidationError, match="publicly-known placeholder"):
+            Settings(jwt_secret_key=variant)
+
+
+def test_random_32_byte_secrets_accepted() -> None:
+    for generated in (secrets.token_urlsafe(32), secrets.token_hex(32), secrets.token_hex(16)):
+        settings = Settings(jwt_secret_key=generated)
+        assert isinstance(settings.jwt_secret_key, SecretStr)
+
+
+@pytest.mark.parametrize(
+    "weak",
+    [
+        "x" * 32,
+        "a" * 64,
+        "ab" * 20,
+        "passwordpasswordpasswordpasswordpassword",
+    ],
+)
+def test_low_entropy_secret_rejected(weak: str) -> None:
+    with pytest.raises(ValidationError, match="low-entropy"):
+        Settings(jwt_secret_key=weak)
 
 
 def test_cors_origins_split_from_string() -> None:
@@ -64,7 +110,7 @@ def test_secret_is_secret() -> None:
 
 
 def test_get_settings_caches(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("PRAGATISHALA_JWT_SECRET_KEY", "x" * 40)
+    monkeypatch.setenv("PRAGATISHALA_JWT_SECRET_KEY", VALID["jwt_secret_key"])
     get_settings.cache_clear()
     first = get_settings()
     assert get_settings() is first

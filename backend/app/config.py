@@ -7,11 +7,35 @@ Every environment variable is prefixed with ``PRAGATISHALA_`` (for example
 ``PRAGATISHALA_JWT_SECRET_KEY``).
 """
 
+import math
+from collections import Counter
 from functools import lru_cache
 from typing import Literal
 
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Secrets that are publicly known (committed examples, framework defaults).
+# Copying any of them into a real deployment would let anyone forge JWTs, so
+# the settings validator refuses to boot on an exact (case-insensitive) match.
+_KNOWN_PLACEHOLDER_SECRETS: frozenset[str] = frozenset(
+    {
+        "change-me-at-least-32-bytes-long",
+        "change-me-generate-a-real-secret-with-secrets-token-urlsafe",
+        "changeme-changeme-changeme-changeme",
+        "your-256-bit-secret-your-256-bit-secret",
+        "super-secret-key-super-secret-key-123",
+        "my-secret-key-my-secret-key-123456",
+        "dummy-signing-key-for-local-development-only",
+    }
+)
+
+# HS256 requires >= 32 bytes (RFC 7518 section 3.2). Length alone is not
+# sufficient: a key drawn from a handful of distinct characters is brute-
+# forceable regardless of length, so a basic entropy floor applies too.
+_MIN_SECRET_BYTES = 32
+_MIN_SECRET_DISTINCT_CHARS = 12
+_MIN_SECRET_ENTROPY_BITS = 3.0
 
 
 class Settings(BaseSettings):
@@ -63,11 +87,39 @@ class Settings(BaseSettings):
     @field_validator("jwt_secret_key")
     @classmethod
     def _strong_secret(cls, value: SecretStr) -> SecretStr:
-        """HS256 requires keys of at least 32 bytes (RFC 7518 section 3.2)."""
-        if len(value.get_secret_value().encode()) < 32:
+        """Reject publicly-known placeholders and low-entropy signing keys.
+
+        Length alone cannot catch a secret copied from a committed example
+        (a known key lets anyone forge tokens for any user), so validation
+        also refuses placeholder literals and degenerate character sets.
+        """
+        secret = value.get_secret_value()
+        if secret.strip().casefold() in _KNOWN_PLACEHOLDER_SECRETS:
+            msg = (
+                "PRAGATISHALA_JWT_SECRET_KEY is a publicly-known placeholder; "
+                'generate a real secret, e.g. python -c "import secrets; '
+                'print(secrets.token_urlsafe(48))"'
+            )
+            raise ValueError(msg)
+        if len(secret.encode()) < _MIN_SECRET_BYTES:
             msg = "PRAGATISHALA_JWT_SECRET_KEY must be at least 32 bytes long"
             raise ValueError(msg)
+        if (
+            len(set(secret)) < _MIN_SECRET_DISTINCT_CHARS
+            or cls._entropy_bits(secret) < _MIN_SECRET_ENTROPY_BITS
+        ):
+            msg = (
+                "PRAGATISHALA_JWT_SECRET_KEY looks low-entropy (too few distinct "
+                "characters); generate a random secret with the secrets module"
+            )
+            raise ValueError(msg)
         return value
+
+    @staticmethod
+    def _entropy_bits(value: str) -> float:
+        """Shannon entropy of *value* in bits per character (max ~log2 of alphabet)."""
+        total = len(value)
+        return -sum((n / total) * math.log2(n / total) for n in Counter(value).values())
 
     @field_validator("cors_origins", mode="before")
     @classmethod
