@@ -11,16 +11,16 @@ PASSWORD="smoke-super-secret-1"
 PYTHON="$(command -v python3 || command -v python || true)"
 if [ -z "$PYTHON" ]; then
   SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  for candidate in     "$SCRIPT_DIR/../backend/.venv/Scripts/python.exe"     "$SCRIPT_DIR/../backend/.venv/bin/python"; do
+  for candidate in "$SCRIPT_DIR/../backend/.venv/Scripts/python.exe" "$SCRIPT_DIR/../backend/.venv/bin/python"; do
     [ -x "$candidate" ] && PYTHON="$candidate" && break
   done
 fi
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 json() { "$PYTHON" -c "import sys, json; print(json.load(sys.stdin)$1)"; }
+status_of() { curl -s -o /dev/null -w "%{http_code}" "$@"; }
 
 echo "== healthz =="
-curl -sf "http://${BASE#*://}/../healthz" >/dev/null 2>&1 || true
 curl -sf "${BASE%/api/v1}/healthz" | json "['status']" | grep -q ok || fail "healthz"
 
 echo "== register ($EMAIL) =="
@@ -53,15 +53,39 @@ RESULT=$(curl -sf -X POST "$BASE/assessments" -H "$AUTH" -H "Content-Type: appli
   -d '{"input_text":"I know Python and pandas, I use SQL daily at work and I am learning generative AI tools."}')
 printf '%s' "$RESULT" | json "['result']['readiness_score']" | grep -qE '^[0-9]+$' || fail "assessment"
 printf '%s' "$RESULT" | json "['result']['skills'][0]['name']" >/dev/null || fail "assessment skills"
+ASSESSMENT_ID=$(printf '%s' "$RESULT" | json "['id']")
 
 echo "== learning path =="
 curl -sf -X POST "$BASE/learning-paths/generate" -H "$AUTH" \
   -H "Content-Type: application/json" -d '{}' | json "['content']['modules'][0]['title']" >/dev/null || fail "learning path"
 
 echo "== resume =="
-curl -sf -X POST "$BASE/resumes/generate" -H "$AUTH" -H "Content-Type: application/json" \
-  -d '{"target_role":"Data Analyst","skills":["Python","SQL"],"experience_text":"Analyst at Acme\n- built dashboards"}' \
-  | json "['content']['headline']" >/dev/null || fail "resume"
+RESUME=$(curl -sf -X POST "$BASE/resumes/generate" -H "$AUTH" -H "Content-Type: application/json" \
+  -d '{"target_role":"Data Analyst","skills":["Python","SQL"],"experience_text":"Analyst at Acme\n- built dashboards"}')
+RESUME_ID=$(printf '%s' "$RESUME" | json "['id']")
+
+echo "   resume PATCH renames it"
+curl -sf -X PATCH "$BASE/resumes/$RESUME_ID" -H "$AUTH" -H "Content-Type: application/json" \
+  -d '{"title":"Smoke Renamed Resume"}' | json "['title']" | grep -q "Smoke Renamed" || fail "resume PATCH"
+
+echo "   another user cannot read the assessment (expect 404)"
+EMAIL2="smoke-second-$(date +%s)@example.com"
+curl -sf -X POST "$BASE/auth/register" -H "Content-Type: application/json" \
+  -d "{\"email\":\"$EMAIL2\",\"password\":\"$PASSWORD\",\"full_name\":\"Second User\"}" >/dev/null
+TOKENS2=$(curl -sf -X POST "$BASE/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=$EMAIL2&password=$PASSWORD")
+AUTH2="Authorization: Bearer $(printf '%s' "$TOKENS2" | json "['access_token']")"
+[ "$(status_of "$BASE/assessments/$ASSESSMENT_ID" -H "$AUTH2")" = "404" ] || fail "ownership boundary"
+
+echo "== profile PATCH =="
+curl -sf -X PATCH "$BASE/users/me" -H "$AUTH" -H "Content-Type: application/json" \
+  -d '{"full_name":"Smoke Tester Renamed"}' | json "['full_name']" | grep -q "Renamed" || fail "profile PATCH"
+
+echo "== SSE =="
+[ "$(status_of "$BASE/events")" = "401" ] || fail "SSE without token should be 401"
+SSE_META=$(curl -s -o /dev/null -w "%{http_code} %{content_type}" -m 2 -H "$AUTH" "$BASE/events" || true)
+printf '%s' "$SSE_META" | grep -q "^200 text/event-stream" || fail "SSE stream ($SSE_META)"
 
 echo "== market insights =="
 curl -sf "$BASE/market/insights?role=Data%20Analyst" -H "$AUTH" \
