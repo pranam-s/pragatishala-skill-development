@@ -8,7 +8,7 @@ from app.events import EventBus, get_event_bus
 async def test_publish_reaches_subscriber() -> None:
     bus = EventBus()
     queue = await bus.subscribe(1)
-    assert bus.subscriber_count(1) == 1
+    assert len(bus._subscribers.get(1, ())) == 1
 
     await bus.publish(1, {"type": "test", "message": "hi"})
     assert queue.get_nowait() == {"type": "test", "message": "hi"}
@@ -23,7 +23,7 @@ async def test_unsubscribe_removes_queue() -> None:
     bus = EventBus()
     queue = await bus.subscribe(1)
     await bus.unsubscribe(1, queue)
-    assert bus.subscriber_count(1) == 0
+    assert 1 not in bus._subscribers
     await bus.unsubscribe(1, queue)  # idempotent
     await bus.unsubscribe(2, queue)  # unknown user is a no-op
 
@@ -42,7 +42,7 @@ async def test_multiple_subscribers_fan_out() -> None:
     bus = EventBus()
     q1 = await bus.subscribe(1)
     q2 = await bus.subscribe(1)
-    assert bus.subscriber_count(1) == 2
+    assert len(bus._subscribers.get(1, ())) == 2
     await bus.publish(1, {"n": 1})
     assert q1.get_nowait() == {"n": 1}
     assert q2.get_nowait() == {"n": 1}
@@ -56,4 +56,4 @@ async def test_subscribe_lock_serializes() -> None:
     bus = EventBus()
     queues = await asyncio.gather(*(bus.subscribe(i) for i in range(5)))
     assert len(queues) == 5
-    assert bus.subscriber_count(4) == 1
+    assert len(bus._subscribers.get(4, ())) == 1

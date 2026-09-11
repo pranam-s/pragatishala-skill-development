@@ -2,7 +2,7 @@
 
 Each connected user gets one or more ``asyncio.Queue`` subscribers. Services
 publish :class:`~app.schemas.PlatformEvent` payloads when long-running AI work
-starts and finishes.
+finishes.
 
 Single-process by design for the MVP; a Redis pub/sub backend is the planned
 Phase 3 upgrade (see docs/adr/0004).
@@ -51,10 +51,6 @@ class EventBus:
                 queue.put_nowait(event)
             except asyncio.QueueFull:
                 logger.warning("Dropping event for user %s: subscriber queue full", user_id)
-
-    def subscriber_count(self, user_id: int) -> int:
-        """Number of live subscriber queues for *user_id* (used by tests)."""
-        return len(self._subscribers.get(user_id, ()))
 
 
 _bus = EventBus()

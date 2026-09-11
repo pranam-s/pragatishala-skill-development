@@ -1,9 +1,8 @@
 """FastAPI application factory and ASGI entrypoint.
 
-Run locally with either of::
+Run locally with::
 
     uv run uvicorn app.main:app --reload
-    uv run uvicorn main:app --reload   # ``main.py`` re-exports this app
 """
 
 from collections.abc import AsyncIterator

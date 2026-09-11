@@ -4,6 +4,7 @@ import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.engine import RULE_BASED, SkillEngine
@@ -298,7 +299,6 @@ async def update_resume(
         resume.title = title.strip() or resume.title
     if content is not None:
         resume.content = content.model_dump()
-    resume.updated_at = datetime.now(UTC)
     await session.commit()
     await session.refresh(resume)
     return resume
@@ -349,7 +349,21 @@ async def get_market_insights(
         report.content = insights.model_dump()
         report.refreshed_at = now
     report.engine_used = outcome.engine_used
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        # Cold-start race: a concurrent request inserted the same role first.
+        # The winner's row is a valid fresh report - serve it instead of 500.
+        await session.rollback()
+        winner = (
+            await session.execute(select(MarketReport).where(MarketReport.role == role_key))
+        ).scalar_one()
+        return (
+            MarketInsights.model_validate(winner.content),
+            winner.engine_used,
+            _aware(winner.refreshed_at),
+            True,
+        )
     await session.refresh(report)
     return insights, outcome.engine_used, _aware(report.refreshed_at), False
 

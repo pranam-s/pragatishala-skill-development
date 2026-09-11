@@ -52,7 +52,7 @@ async def test_stream_yields_events_and_cleans_up(
 
     # Closing the generator runs the finally-block and unsubscribes.
     await stream.aclose()
-    assert bus.subscriber_count(user_id) == 0
+    assert user_id not in bus._subscribers
 
 
 async def test_keepalive_comment_on_idle(
@@ -76,4 +76,4 @@ async def test_keepalive_comment_on_idle(
     assert keepalive == ": keep-alive\n\n"
 
     await stream.aclose()
-    assert bus.subscriber_count(user_id) == 0
+    assert user_id not in bus._subscribers

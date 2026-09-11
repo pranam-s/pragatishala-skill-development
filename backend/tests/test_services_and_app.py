@@ -93,12 +93,6 @@ async def test_healthz_before_lifespan(tmp_path: Path, monkeypatch: pytest.Monke
     assert body["ai_provider"] == "uninitialized"
 
 
-async def test_entrypoint_reexports_app() -> None:
-    import main  # backend/main.py
-
-    assert main.app is app
-
-
 async def test_cors_allows_configured_origin(client) -> None:
     response = await client.get("/healthz", headers={"Origin": "http://localhost:5173"})
     assert response.headers.get("access-control-allow-origin") == "http://localhost:5173"
@@ -140,3 +134,57 @@ async def test_lifespan_configures_engine_and_tables(client) -> None:
     async with app.router.lifespan_context(app):
         assert isinstance(app.state.skill_engine, _SkillEngine)
         assert app.state.skill_engine.provider_name == RULE_BASED
+
+
+async def test_market_cold_start_race_serves_winner_row(
+    client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Two concurrent cold-cache requests must not 500 on the unique role.
+
+    The loser of the insert race re-reads the winner's row and serves it
+    (AR-028).
+    """
+    from datetime import UTC, datetime
+
+    from app.ai.engine import SkillEngine
+    from app.models import MarketReport
+    from app.schemas import MarketInsights
+    from app.services import get_market_insights
+
+    insights_payload = MarketInsights(
+        role="Data Analyst",
+        demand_level="high",
+        median_salary_range_inr="₹4-14 LPA",
+        growth_outlook="Steady.",
+        top_skills=["SQL"],
+        trending_skills=["Python"],
+        typical_employers=["Banks"],
+        recommended_certifications=["PL-300"],
+        advice=["Master SQL."],
+    ).model_dump()
+
+    factory = get_session_factory()
+    async with factory() as session, factory() as sneaky:
+        original_commit = session.commit
+
+        async def racing_commit() -> None:
+            sneaky.add(
+                MarketReport(
+                    role="data analyst",
+                    content=insights_payload,
+                    engine_used="rule_based",
+                    refreshed_at=datetime.now(UTC),
+                )
+            )
+            await sneaky.commit()
+            await original_commit()
+
+        monkeypatch.setattr(session, "commit", racing_commit)
+        insights, engine_used, refreshed_at, was_cached = await get_market_insights(
+            session, SkillEngine(None), "Data Analyst"
+        )
+
+    assert was_cached is True
+    assert engine_used == "rule_based"
+    assert insights.demand_level == "high"
+    assert refreshed_at.tzinfo is not None
