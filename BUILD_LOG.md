@@ -2,6 +2,33 @@
 
 Honest, reverse-chronological log of significant work sessions.
 
+## 2026-09-11 → 2026-09-12 — Adversarial-review remediation and publication finalization
+
+- **Remediation pass:** all 32 findings (AR-001..AR-032) from
+  [docs/ADVERSARIAL-REVIEW.md](docs/ADVERSARIAL-REVIEW.md) fixed across
+  security (secret policy, rate limiting, JWT claims, prompt fencing),
+  engine correctness (sentence-scoped scoring, ambiguous aliases), deps,
+  tests, and docs — see the review doc and CHANGELOG for the full record.
+  Suite grew to 199 tests at 99.28% line+branch; frontend to 37 tests.
+- **Finalization pass (publication readiness):** hostile re-read of the
+  remediated codebase found two new items, both fixed:
+  - AR-033 — the readiness score's "soft bonus" counted *missing*
+    recommended skills (extra adjacent knowledge could lower a score); it
+    now counts recommended skills actually covered, with a regression test.
+  - AR-034 — frontend minors drifted again (Chakra 3.29 → 3.37, React
+    19.3, @types refresh); backend `uv lock --upgrade` re-verified current.
+    TypeScript stays ^6.0.3: typescript-eslint 8.70.0 peer-caps TS <6.1.0.
+- Docs swept against reality: architecture auth section (AR-025 claims),
+  PRD (rate limiting shipped), style guide (ESLint 10), ADR 0002 amended,
+  counts synced everywhere (200 backend / 37 frontend), Vite 8, Node 24
+  `engines`.
+- Re-verified end to end: `uv sync --frozen`, uvicorn boot, full e2e smoke
+  (`scripts/e2e_smoke.sh`) ALL CHECKS PASSED over live HTTP, the same
+  register flow through the Vite 8 dev proxy, `index.html` given a real
+  title + description (was the Vite scaffold default).
+- Gates at close: pytest 200 passed (99.28%), ruff + mypy strict clean;
+  vitest 37 passed, ESLint + `tsc -b` + vite build clean.
+
 ## 2026-09-10 → 2026-09-11 — Backend completion, frontend wiring, revival (unlimited window 22:00–06:30 IST)
 
 Starting state: last real commit was the frontend-only setup ("backend blocked
