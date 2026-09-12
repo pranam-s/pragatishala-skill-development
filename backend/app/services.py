@@ -309,11 +309,13 @@ def _normalize_role(role: str) -> str:
 
 
 async def get_market_insights(
-    session: AsyncSession, engine: SkillEngine, role: str
-) -> tuple[MarketInsights, str, datetime, bool]:
+    session: AsyncSession, engine: SkillEngine, role: str, refresh: bool = False
+) -> tuple[MarketInsights, str, datetime, bool, str | None]:
     """Return insights for *role*, using the cache when fresh.
 
-    Returns ``(insights, engine_used, refreshed_at, was_cached)``.
+    Returns ``(insights, engine_used, refreshed_at, was_cached, model_used)``.
+    ``refresh`` bypasses the TTL so a bad cached report can be invalidated
+    without direct database access.
     """
     role_key = _normalize_role(role)
     now = datetime.now(UTC)
@@ -323,11 +325,17 @@ async def get_market_insights(
     ).scalar_one_or_none()
 
     settings = get_settings()
-    if report is not None:
+    if report is not None and not refresh:
         age_minutes = (now - _aware(report.refreshed_at)).total_seconds() / 60
         if age_minutes <= settings.market_cache_minutes:
             insights = MarketInsights.model_validate(report.content)
-            return insights, report.engine_used, _aware(report.refreshed_at), True
+            return (
+                insights,
+                report.engine_used,
+                _aware(report.refreshed_at),
+                True,
+                report.model_used,
+            )
 
     outcome = await engine.market_insights(role_key)
     value = outcome.value
@@ -344,6 +352,7 @@ async def get_market_insights(
         report.content = insights.model_dump()
         report.refreshed_at = now
     report.engine_used = outcome.engine_used
+    report.model_used = outcome.model
     try:
         await session.commit()
     except IntegrityError:
@@ -358,9 +367,10 @@ async def get_market_insights(
             winner.engine_used,
             _aware(winner.refreshed_at),
             True,
+            winner.model_used,
         )
     await session.refresh(report)
-    return insights, outcome.engine_used, _aware(report.refreshed_at), False
+    return insights, outcome.engine_used, _aware(report.refreshed_at), False, outcome.model
 
 
 def _aware(value: datetime) -> datetime:

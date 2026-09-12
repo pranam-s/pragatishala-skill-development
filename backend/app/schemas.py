@@ -224,6 +224,7 @@ class MarketInsightsRead(BaseModel):
     role: str
     insights: MarketInsights
     engine_used: str
+    model_used: str | None = None
     refreshed_at: datetime
     cached: bool
 

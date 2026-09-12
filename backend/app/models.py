@@ -102,6 +102,9 @@ class MarketReport(Base):
     role: Mapped[str] = mapped_column(String(120), unique=True, index=True, nullable=False)
     content: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     engine_used: Mapped[str] = mapped_column(String(40), nullable=False, default="rule_based")
+    # LLM model that generated the content (None for rule_based/legacy rows);
+    # kept so operators can spot stale output from a retired provider model.
+    model_used: Mapped[str | None] = mapped_column(String(120))
     refreshed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )

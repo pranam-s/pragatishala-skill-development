@@ -84,10 +84,15 @@ _USAGE_PRECEDER_SPAN = 16
 
 @dataclass(frozen=True)
 class EngineOutcome:
-    """Result of an engine call plus the path that produced it."""
+    """Result of an engine call plus the path that produced it.
+
+    ``model`` names the LLM that generated the value (None for the
+    rule-based engine) so callers can persist and surface it.
+    """
 
     value: BaseModel
     engine_used: str
+    model: str | None = None
 
 
 def _level_for(skill_text: str, mention_count: int, years: float | None) -> str:
@@ -833,6 +838,12 @@ class SkillEngine:
         """Name of the active LLM provider, or ``rule_based``."""
         return self._provider.name if self._provider else RULE_BASED
 
+    def _outcome(self, value: BaseModel) -> EngineOutcome:
+        """Bundle a provider result with the provider name and model."""
+        return EngineOutcome(
+            value, self.provider_name, self._provider.model if self._provider else None
+        )
+
     async def _complete(self, system: str, user: str, schema: type[BaseModel]) -> BaseModel | None:
         if self._provider is None:
             return None
@@ -860,7 +871,7 @@ class SkillEngine:
         )
         outcome = await self._complete(system, user, AssessmentResult)
         if isinstance(outcome, AssessmentResult):
-            return EngineOutcome(outcome, self.provider_name)
+            return self._outcome(outcome)
         return EngineOutcome(fallback, RULE_BASED)
 
     async def build_learning_path(
@@ -886,7 +897,7 @@ class SkillEngine:
         user = f"Target role: {role}\n{_wrap_user_data('assessment', assessment_facts)}"
         outcome = await self._complete(system, user, LearningPathContent)
         if isinstance(outcome, LearningPathContent):
-            return EngineOutcome(outcome, self.provider_name)
+            return self._outcome(outcome)
         return EngineOutcome(fallback, RULE_BASED)
 
     async def generate_resume(
@@ -920,7 +931,7 @@ class SkillEngine:
         user = _wrap_user_data("resume-facts", resume_facts)
         outcome = await self._complete(system, user, ResumeContent)
         if isinstance(outcome, ResumeContent):
-            return EngineOutcome(outcome, self.provider_name)
+            return self._outcome(outcome)
         return EngineOutcome(fallback, RULE_BASED)
 
     async def market_insights(self, role: str | None) -> EngineOutcome:
@@ -938,5 +949,5 @@ class SkillEngine:
         user = f"Role family: {profile.title}"
         outcome = await self._complete(system, user, MarketInsights)
         if isinstance(outcome, MarketInsights):
-            return EngineOutcome(outcome, self.provider_name)
+            return self._outcome(outcome)
         return EngineOutcome(fallback, RULE_BASED)

@@ -180,11 +180,31 @@ async def test_market_cold_start_race_serves_winner_row(
             await original_commit()
 
         monkeypatch.setattr(session, "commit", racing_commit)
-        insights, engine_used, refreshed_at, was_cached = await get_market_insights(
+        insights, engine_used, refreshed_at, was_cached, model_used = await get_market_insights(
             session, SkillEngine(None), "Data Analyst"
         )
 
     assert was_cached is True
     assert engine_used == "rule_based"
+    assert model_used is None  # rule-based winner row carries no model
     assert insights.demand_level == "high"
     assert refreshed_at.tzinfo is not None
+
+
+async def test_market_refresh_bypasses_fresh_cache(client) -> None:
+    """refresh=true must regenerate even when the cached row is within TTL (AR2-014)."""
+    from app.ai.engine import SkillEngine
+    from app.services import get_market_insights
+
+    factory = get_session_factory()
+    async with factory() as session:
+        engine = SkillEngine(None)
+        await get_market_insights(session, engine, "Data Analyst")
+        _first, _used, _at, cached, _model = await get_market_insights(
+            session, engine, "Data Analyst"
+        )
+        assert cached is True
+        _fresh, _used, _at, cached_after, _model = await get_market_insights(
+            session, engine, "Data Analyst", refresh=True
+        )
+        assert cached_after is False

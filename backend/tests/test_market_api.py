@@ -35,6 +35,27 @@ async def test_market_fresh_then_cached(client) -> None:
     assert second.json()["cached"] is True
 
 
+async def test_market_refresh_flag_invalidates_cache(client) -> None:
+    await register_user(client)
+    headers = await login_headers(client)
+
+    await client.get("/api/v1/market/insights", headers=headers, params={"role": "Data Analyst"})
+    refreshed = await client.get(
+        "/api/v1/market/insights",
+        headers=headers,
+        params={"role": "Data Analyst", "refresh": "true"},
+    )
+    assert refreshed.status_code == 200
+    body = refreshed.json()
+    assert body["cached"] is False  # AR2-014: refresh bypasses the fresh cache
+    assert body["model_used"] is None  # rule-based engine names no model
+
+    after = await client.get(
+        "/api/v1/market/insights", headers=headers, params={"role": "Data Analyst"}
+    )
+    assert after.json()["cached"] is True  # the refresh overwrote the cache
+
+
 async def test_market_cache_disabled_refreshes(client, monkeypatch) -> None:
     monkeypatch.setenv("PRAGATISHALA_MARKET_CACHE_MINUTES", "0")
     get_settings.cache_clear()
