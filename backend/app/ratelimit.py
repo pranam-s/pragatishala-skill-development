@@ -16,7 +16,7 @@ from collections import defaultdict, deque
 from collections.abc import Callable, Sequence
 
 from starlette.responses import JSONResponse
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 WINDOW_SECONDS = 60.0
 
@@ -69,6 +69,16 @@ class SlidingWindowLimiter:
             self._drop_expired(cutoff)
         return True, 0
 
+    def refund(self, key: str) -> None:
+        """Remove the most recent hit for *key* (used to un-count redirects).
+
+        Best effort under concurrency: a request interleaved between the
+        original check and the refund may be the hit removed instead.
+        """
+        hits = self._hits.get(key)
+        if hits:
+            hits.pop()
+
     def _drop_expired(self, cutoff: float) -> None:
         """Forget buckets whose every recorded hit is older than the window."""
         stale = [key for key, hits in self._hits.items() if not hits or hits[-1] <= cutoff]
@@ -119,9 +129,23 @@ class RateLimitMiddleware:
         key = f"{bucket}:{client[0] if client else 'unknown'}"
         allowed, retry_after = self.limiter.check(key, limit)
         if allowed:
-            await self.app(scope, receive, send)
+            await self._forward(key, scope, receive, send)
             return
         await _reject(retry_after)(scope, receive, send)
+
+    async def _forward(self, key: str, scope: Scope, receive: Receive, send: Send) -> None:
+        """Forward to the app, un-counting redirect responses (AR3-009).
+
+        Starlette answers 'POST /route/' with a 307 to '/route'; without the
+        refund, one logical request consumed two hits of the budget.
+        """
+
+        async def send_unless_redirect(message: Message) -> None:
+            if message["type"] == "http.response.start" and 300 <= message["status"] < 400:
+                self.limiter.refund(key)
+            await send(message)
+
+        await self.app(scope, receive, send_unless_redirect)
 
 
 def _reject(retry_after: int) -> ASGIApp:

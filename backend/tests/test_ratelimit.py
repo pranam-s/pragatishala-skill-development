@@ -10,7 +10,7 @@ from app.ratelimit import (
 )
 from pydantic import ValidationError
 
-from tests.conftest import login_headers
+from tests.conftest import login_headers, register_user
 
 NARRATIVE = "I have 5 years of experience with Python and SQL."
 SECRET = "Qk7wR2tY9uP5mJ3nV8cX4bZ6dF8gH2sL"
@@ -85,6 +85,55 @@ def test_bucket_for_matches_trailing_slash() -> None:
     assert bucket_for("POST", "/api/v1/auth/login/") == AUTH_BUCKET
     assert bucket_for("GET", "/api/v1/market/insights/") == GENERATION_BUCKET
     assert bucket_for("POST", "/", rules=(("POST", "/", AUTH_BUCKET),)) == AUTH_BUCKET
+
+
+def test_limiter_refund_removes_the_last_hit() -> None:
+    limiter = SlidingWindowLimiter()
+    assert limiter.check("key", 1)[0]
+    limiter.refund("key")
+    assert limiter.check("key", 1)[0]
+    limiter.refund("unknown")  # no-op on an empty bucket
+
+
+# --- AR3-009: 3xx redirects must not consume the bucket ---
+
+
+async def test_trailing_slash_redirects_do_not_consume_the_bucket(client, monkeypatch) -> None:
+    monkeypatch.setenv("PRAGATISHALA_AUTH_RATE_LIMIT_PER_MINUTE", "2")
+    get_settings.cache_clear()
+    for _ in range(3):
+        response = await client.post(
+            "/api/v1/auth/login/",
+            data={"username": "redirect@example.com", "password": "whatever"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 307
+    # Neither redirect consumed the bucket: the two real logins still fit.
+    for _ in range(2):
+        response = await client.post(
+            "/api/v1/auth/login",
+            data={"username": "redirect@example.com", "password": "whatever"},
+        )
+        assert response.status_code == 401  # wrong credentials, but counted
+    blocked = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "redirect@example.com", "password": "whatever"},
+    )
+    assert blocked.status_code == 429
+
+
+async def test_followed_trailing_slash_request_consumes_exactly_one_hit(
+    client, monkeypatch
+) -> None:
+    monkeypatch.setenv("PRAGATISHALA_AUTH_RATE_LIMIT_PER_MINUTE", "1")
+    get_settings.cache_clear()
+    await register_user(client, email="slash@example.com")
+    blocked = await client.post(
+        "/api/v1/auth/login/",
+        data={"username": "slash@example.com", "password": "super-secret-pass-123"},
+    )  # the redirect is followed; the follow-up request consumes the slot
+    assert blocked.status_code == 429
+    assert int(blocked.headers["Retry-After"]) >= 1
 
 
 async def test_auth_bucket_returns_429_with_retry_after(client, monkeypatch) -> None:
