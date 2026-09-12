@@ -322,3 +322,36 @@ def test_ambiguous_skills_detected_with_skill_context(phrase: str, expected: set
 def test_embedded_context_words_do_not_invent_skills(phrase: str) -> None:
     result = _rule_based_assessment(phrase, None)
     assert {skill.name for skill in result.skills} == set()
+
+
+# --- AR2-003: the ambiguity gate is alias-proximate, not sentence-global ---
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "At the coding bootcamp I was ready to go.",
+        "I studied programming at a bootcamp before I had to go home.",
+    ],
+)
+def test_distant_context_words_do_not_gate_ambiguous_alias(phrase: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    assert {skill.name for skill in result.skills} == set()
+
+
+@pytest.mark.parametrize(
+    ("phrase", "expected"),
+    [
+        ("Built a payments service using Go.", {"Go"}),
+        ("I led a team of five.", {"Leadership"}),
+        ("Leading a Go team at a startup.", {"Go"}),
+        ("I know Go and use it daily.", {"Go"}),
+        ("I led a team of engineers.", {"Leadership"}),
+    ],
+)
+def test_proximate_claims_still_flag_ambiguous_aliases(
+    phrase: str, expected: set[str]
+) -> None:
+    result = _rule_based_assessment(phrase, None)
+    names = {skill.name for skill in result.skills}
+    assert expected <= names

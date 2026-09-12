@@ -40,18 +40,34 @@ _LEVEL_WORDS: tuple[tuple[str, str], ...] = (
     ("basic", "beginner"),
     ("learning", "beginner"),
 )
+_LEVEL_WORD_PATTERN = re.compile(
+    rf"\b(?:{'|'.join(word for word, _level in _LEVEL_WORDS)})\b"
+)
 _SENTENCE_BREAK = re.compile(r"[.!?;\n]")
 
 # Aliases that double as ordinary English words ("ready to go", "LED lights",
-# "grade A B C") are accepted only when their sentence carries skill context:
-# a skill noun, a proficiency word, or an experience figure. Without the gate
-# the engine invents skills the narrative never claimed.
+# "grade A B C") are accepted only when the text near the alias reads as skill
+# talk: a skill noun, a proficiency word, or an experience figure. Proximity
+# matters - a context word elsewhere in the sentence ("coding bootcamp ... I
+# was ready to go") must not vouch for a distant homograph - and a usage verb
+# directly before the alias ("built a service using Go") is evidence itself.
 _AMBIGUOUS_ALIASES: frozenset[str] = frozenset({"c", "go", "led"})
+_CONTEXT_WINDOW = 24
 _SKILL_CONTEXT_PATTERN = re.compile(
     r"\b(?:skills?|languages?|programming|frameworks?|libraries?|stack|"
     r"developers?|development|engineers?|code|coding|databases?|experienced?"
-    r"|expertise|proficien\w*|certifications?|know|known|technolog\w*|tools?)\b"
+    r"|expertise|proficien\w*|certifications?|know|known|technolog\w*|tools?"
+    r"|(?:led|leads?|leading)\W+(?:\w+\W+){0,2}teams?)\b"
 )
+_USAGE_PRECEDER_PATTERN = re.compile(
+    r"\b(?:using|uses?|with|in|via"
+    r"|built|builds?|wrote|written|writing|writes?"
+    r"|deploys?|deployed|deploying|maintains?|maintained|maintaining"
+    r"|runs?|running|ran|ships?|shipped|shipping)$"
+)
+# Longest usage verb plus a separating space; the slice a precedence check may
+# look at before the alias.
+_USAGE_PRECEDER_SPAN = 16
 
 
 @dataclass(frozen=True)
@@ -110,12 +126,22 @@ def _mention_spans(text: str) -> list[tuple[int, int, str, str]]:
     return spans
 
 
-def _is_skill_context(sentence: str) -> bool:
-    """True when a sentence reads as skill talk (skill nouns, levels, years)."""
+def _is_skill_context(
+    sentence: str, sentence_left: int, sentence_right: int, alias_start: int, alias_end: int
+) -> bool:
+    """True when the text within ``_CONTEXT_WINDOW`` of the alias reads as skill talk.
+
+    All offsets are relative to ``sentence``, whose span inside the full text is
+    ``[sentence_left, sentence_right)``.
+    """
+    left = max(sentence_left, alias_start - _CONTEXT_WINDOW)
+    right = min(sentence_right, alias_end + _CONTEXT_WINDOW)
+    precedes = max(left, alias_start - _USAGE_PRECEDER_SPAN)
     return bool(
-        _SKILL_CONTEXT_PATTERN.search(sentence)
-        or _EXPERIENCE_PATTERN.search(sentence)
-        or any(re.search(rf"\b{word}\b", sentence) for word, _level in _LEVEL_WORDS)
+        _SKILL_CONTEXT_PATTERN.search(sentence, left, right)
+        or _EXPERIENCE_PATTERN.search(sentence, left, right)
+        or _LEVEL_WORD_PATTERN.search(sentence, left, right)
+        or _USAGE_PRECEDER_PATTERN.search(sentence[precedes:alias_start].rstrip())
     )
 
 
@@ -150,7 +176,7 @@ def _score_mentions(text: str) -> dict[str, SkillScore]:
     for index, (start, end, _canonical, alias) in enumerate(spans):
         if alias in _AMBIGUOUS_ALIASES:
             left, right = _sentence_bounds(lowered, start, end)
-            if not _is_skill_context(lowered[left:right]):
+            if not _is_skill_context(lowered, left, right, start, end):
                 continue
         kept.append(spans[index])
     spans = kept
