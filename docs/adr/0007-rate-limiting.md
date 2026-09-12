@@ -46,7 +46,9 @@ Properties:
 - Same single-process scope as the SSE bus: with multiple workers each
   process enforces its own window. Production deployments behind a reverse
   proxy should enforce equivalent limits there (nginx `limit_req` etc.);
-  the deployment guide owns that story.
+  The deployment guidance this ADR deferred to now exists: see
+  [deployment.md](../deployment.md) (single worker, real-IP forwarding,
+  proxy-level limits, SSE-safe buffering).
 - Per-IP keying means many legitimate students behind one NAT share a
   bucket; defaults (10 auth/min) are set well above interactive use.
 - In-memory state: limits reset on restart. That is acceptable for

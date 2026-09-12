@@ -67,6 +67,12 @@ Generate a dev secret:
 uv run python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
+The startup validator rejects known placeholders and degenerate keys, but it
+is a sanity floor, not a strength meter: always boot from a generated random
+key, never from a "strong-looking" hand-made one (see limitations #13).
+Production deployments additionally need the reverse-proxy posture described
+in [docs/deployment.md](docs/deployment.md).
+
 ### 2. Frontend
 
 ```bash

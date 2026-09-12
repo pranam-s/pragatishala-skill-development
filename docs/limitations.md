@@ -37,11 +37,16 @@ Last updated: 2026-09-12.
    verification, password reset, or account lockout.
 5. **Rule-based quality is heuristic.** The offline engine scores each skill
    mention within its own sentence (level words and year figures bind to the
-   clause they appear in) and rejects ambiguous words ("go", "led", "c")
-   unless the sentence reads as skill talk. It is deliberately conservative:
-   it will miss unusual phrasings (e.g. "I use Go" without a skill-context
-   word) and unqualified claims default to beginner. `engine_used` tells you
-   when you are reading its output.
+   clause they appear in, and year figures must sit within a few tokens of the
+   mention) and rejects homograph aliases ("go", "led", "c", "node", "swift",
+   "cv", ".net", "lambda") unless skill-talk evidence sits near the word. It
+   is deliberately conservative: it will miss unusual phrasings (e.g. "I use
+   Go" with no skill-context word nearby) and unqualified claims default to
+   beginner. Two precision limits remain: a proficiency word binds to the
+   nearest mention, so reported speech ("Dr. Smith says I led the migration
+   and I am an expert in Python") can still over-credit a skill, and the
+   ±24-character context window is a heuristic, not parsing. `engine_used`
+   tells you when you are reading its output.
 6. **LLM prompt-injection defences are minimal.** User text is fenced in
    `<user_data>` tags and system prompts instruct the model to treat that
    content as data, but a determined injection can still try to skew the
@@ -65,6 +70,18 @@ Last updated: 2026-09-12.
    screen-reader smoke pass) is roadmap work.
 12. **MySQL path is untested.** The connection string is supported, but CI runs
    SQLite only.
+13. **The JWT-secret validator is a floor, not a strength meter.** The
+   placeholder denylist (now substring-matched) catches copied examples, and
+   the entropy floor kills degenerate keys ("xxxx…", "abab…"), but per-character
+   Shannon entropy measures histogram flatness, not guessability: a keyboard
+   walk or a repeated block like "Sunshine-Rain99!"×3 can pass, while a strong
+   Diceware passphrase needs many characters to clear it. The real control is
+   generating the key with `secrets.token_urlsafe(48)` as the docs prescribe;
+   the validator only stops obvious mistakes (AR2-007/AR2-008).
+14. **Rate limiting trusts the socket peer.** Behind a reverse proxy that does
+   not set a real client IP, every client shares the proxy's bucket; the
+   deployment guidance (proxy limits, real-IP forwarding) lives in
+   [deployment.md](deployment.md) and must be applied when deploying (AR2-009).
 
 ## Evaluation against the PRD
 
