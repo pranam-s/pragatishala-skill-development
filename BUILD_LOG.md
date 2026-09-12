@@ -2,6 +2,31 @@
 
 Honest, reverse-chronological log of significant work sessions.
 
+## 2026-09-12 — Third adversarial pass (AR3) remediation
+
+- **Review:** [docs/ADVERSARIAL-REVIEW-3.md](docs/ADVERSARIAL-REVIEW-3.md)
+  attacks the AR2-fix wave itself: 11 findings (1 high, 6 medium, 4 low),
+  every claim verified by executed probes. Headline: the AR2 ambiguity gate
+  matched on `text.lower()`, erasing the led/LED distinction, so "I led the
+  migration and I am an expert in Python." scored no Leadership at all.
+- **Remediation:** one conventional commit per finding, each with regression
+  tests built from the review's repro strings (verified red before the fix):
+  led/LED case disambiguation (AR3-001), decimal years + decimal-point
+  sentence splits (AR3-002), clause-level word shared across list siblings
+  (AR3-003), homograph sense vetoes/cues for go/cv/lambda/swift/node
+  (AR3-004), discourse boundaries in years proximity + budget 4→6 (AR3-005),
+  per-user market-refresh budget (AR3-006), versioned startup schema
+  upgrades + ADR-0008 (AR3-007), weak preceders need corroboration (AR3-008),
+  3xx redirect refund in the rate limiter (AR3-009), smoke refresh probe +
+  60 s re-run cool-down (AR3-010), asp.net C# alias (AR3-011).
+- Deviations recorded in the review's resolution table: AR3-006 solved with
+  a per-user budget instead of staff-role gating (no role model exists);
+  AR3-007 solved with startup upgrades instead of Alembic (ADR-0003's
+  trigger has not fired); AR2-004's committed SQL=beginner expectation
+  flipped to expert per AR3-003.
+- Gates at close: pytest 278 passed (99.36% line+branch), ruff check/format
+  and mypy strict clean; frontend untouched (37 vitest tests).
+
 ## 2026-09-11 → 2026-09-12 — Adversarial-review remediation and publication finalization
 
 - **Remediation pass:** all 32 findings (AR-001..AR-032) from

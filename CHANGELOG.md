@@ -4,6 +4,48 @@ All notable changes to PragatiShala are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — 2026-09-12 (third pass)
+
+Third adversarial pass remediation (findings AR3-001..AR3-011 from
+`docs/ADVERSARIAL-REVIEW-3.md`; resolution table appended to that review).
+
+### Fixed
+- Skill engine: lowercase "led" is a leadership claim again (only the
+  all-caps "LED" acronym is gated, causative "led to …" stays vetoed),
+  restoring "I led the migration and I am an expert in Python." and the
+  other dominant phrasings the AR2 gate dropped (AR3-001).
+- Skill engine: decimal years parse as one figure ("0.5 years with Python"
+  is beginner, not expert), and decimal points no longer split sentences
+  (AR3-002).
+- Skill engine: a clause's level word covers every list sibling
+  ("Expert in Python, SQL, and Java." → all expert), stopping at discourse
+  markers (AR3-003).
+- Skill engine: the surviving homograph fabrications are closed ("go-to
+  person for databases", "Updated my CV with new skills", "wrote a lambda
+  expression", "the swift development of the feature", "a node in the
+  database cluster"); cv/lambda require domain cues (AR3-004).
+- Skill engine: a comma or discourse marker between a years figure and a
+  skill voids the binding, and the boundary-free proximity budget widened
+  4→6 tokens ("10 years designing and building data pipelines in Python."
+  now scores expert) (AR3-005).
+- Market: `refresh=true` draws from a per-user hourly budget
+  (`PRAGATISHALA_MARKET_REFRESH_PER_HOUR`, default 6; 0 disables), so the
+  24 h cache again bounds LLM spend per account (AR3-006).
+- Rate limiting: 3xx redirects no longer consume the budget; a followed
+  trailing-slash request consumes exactly one hit (AR3-009).
+
+### Added
+- Database: idempotent, versioned startup schema upgrades
+  (`schema_upgrades` table, ADR 0008); a legacy `market_reports` table is
+  altered at startup to add `model_used` instead of 500ing on every market
+  request (AR3-007).
+
+### Testing
+- e2e smoke probes the market refresh path (`cached=false`, `model_used`
+  presence); the 60 s re-run cool-down after the 429 burst is documented in
+  deployment.md §5 (AR3-010). Backend: 278 tests, 99.36% line+branch
+  coverage (AR3-011 included: "ASP.NET" detects as C#).
+
 ## [Unreleased] — 2026-09-12
 
 Second adversarial pass remediation (findings AR2-001..AR2-015 from

@@ -5,7 +5,7 @@ Last updated: 2026-09-12.
 
 ## What is solid
 
-- **Backend correctness.** 232 tests, 99.3% line and branch coverage on `app`
+- **Backend correctness.** 278 tests, 99.36% line and branch coverage on `app`
   (≥90% enforced in CI), strict mypy, Ruff clean. API tests exercise the real
   app (auth, ownership boundaries, validation, error paths) over ASGI.
 - **End-to-end verified.** The full journey (register → login → assessment →
@@ -65,8 +65,11 @@ Last updated: 2026-09-12.
    never fed user text.
 7. **Single-process SSE.** Events do not cross process boundaries and are lost
    on restart (ADR 0004). REST is the source of truth.
-8. **No Alembic migrations.** Destructive schema changes during development
-   currently mean deleting the dev database (ADR 0003).
+8. **No Alembic migrations yet.** Additive column changes are handled by
+   idempotent, versioned startup upgrades recorded in a `schema_upgrades`
+   table (ADR 0008); destructive schema changes still mean deleting the dev
+   database until Alembic lands (ADR 0003's trigger: the first destructive
+   change or the first production deployment).
 9. **Market data is curated, not live.** Offline market snapshots are hand
    written INR ranges; only the LLM path can give fresher (still unverified)
    figures. No job-board integrations yet.

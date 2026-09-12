@@ -76,7 +76,9 @@ throughout development. Current-state detail lives in [README.md](README.md),
 
 *   OAuth social login, email verification, password reset, refresh-token
     revocation.
-*   Alembic migrations, Redis-backed event bus, Docker/packaging, CI deployment.
+*   Full Alembic migrations (additive column changes are covered by versioned
+    startup upgrades, ADR 0008), Redis-backed event bus, Docker/packaging,
+    CI deployment.
 *   Progress analytics, interview prep, job-board integrations, multi-language
     UI, resume PDF export.
 
@@ -86,8 +88,15 @@ throughout development. Current-state detail lives in [README.md](README.md),
     (register → login → assessment → learning path → resume → market →
     refresh → SSE) verified over live HTTP and through the Vite dev proxy.
 *   **Backend:** FastAPI app factory (`app/main.py`), async SQLAlchemy
-    (SQLite dev / MySQL-ready), strict mypy, Ruff, 232 pytest tests with ~99%
-    line+branch coverage (≥90% enforced). See ADR 0001–0007.
+    (SQLite dev / MySQL-ready), strict mypy, Ruff, 278 pytest tests with
+    99.36% line+branch coverage (≥90% enforced). See ADR 0001–0008.
+*   **Third adversarial pass (2026-09-12):** all 11 findings from
+    `docs/ADVERSARIAL-REVIEW-3.md` fixed with per-finding regression tests;
+    resolution table appended to that review (led/LED case disambiguation,
+    decimal years, list-level sharing, homograph sense checks, years-gap
+    boundaries, per-user market-refresh budget, startup schema upgrades,
+    bare-preceder corroboration, redirect refund, smoke refresh probe,
+    asp.net alias).
 *   **Frontend:** React 19 + Chakra UI v3 + React Router; typed API client with
     token refresh; AuthContext session bootstrap; 37 Vitest tests; ESLint and
     `tsc` strict clean. Note: the earlier tracker claim that the frontend "was

@@ -74,9 +74,11 @@ by design for the MVP; see [adr/0004](adr/0004-realtime.md).
 ### Database
 
 Async SQLAlchemy 2 with aiosqlite (dev) / MySQL drivers (prod). Tables: users,
-assessments, learning_paths, resumes, market_reports (role-unique cache).
-Startup runs idempotent `create_all`; migrations are a deliberate
-post-MVP step ([adr/0003](adr/0003-database-migrations.md)).
+assessments, learning_paths, resumes, market_reports (role-unique cache),
+schema_upgrades (versioned startup-upgrade bookkeeping). Startup runs
+idempotent `create_all` plus versioned column upgrades for tables created by
+older versions ([adr/0008](adr/0008-startup-schema-upgrades.md)); Alembic
+remains a deliberate post-MVP step ([adr/0003](adr/0003-database-migrations.md)).
 
 ## Frontend
 
@@ -111,3 +113,4 @@ post-MVP step ([adr/0003](adr/0003-database-migrations.md)).
 5. [AI: provider-agnostic clients with deterministic offline fallback](adr/0005-ai-fallback.md)
 6. [JWT signing secret policy: placeholders and entropy rejected](adr/0006-jwt-secret-policy.md)
 7. [In-process sliding-window rate limiting](adr/0007-rate-limiting.md)
+8. [Startup schema upgrades: create_all + versioned ALTERs](adr/0008-startup-schema-upgrades.md)
