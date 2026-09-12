@@ -51,13 +51,15 @@ _SENTENCE_BREAK = re.compile(r"[.!?;\n]")
 # matters - a context word elsewhere in the sentence ("coding bootcamp ... I
 # was ready to go") must not vouch for a distant homograph - and a usage verb
 # directly before the alias ("built a service using Go") is evidence itself.
-_AMBIGUOUS_ALIASES: frozenset[str] = frozenset({"c", "go", "led"})
+_AMBIGUOUS_ALIASES: frozenset[str] = frozenset(
+    {"c", "go", "led", "node", "swift", "cv", ".net", "lambda"}
+)
 _CONTEXT_WINDOW = 24
 _SKILL_CONTEXT_PATTERN = re.compile(
     r"\b(?:skills?|languages?|programming|frameworks?|libraries?|stack|"
     r"developers?|development|engineers?|code|coding|databases?|experienced?"
     r"|expertise|proficien\w*|certifications?|know|known|technolog\w*|tools?"
-    r"|(?:led|leads?|leading)\W+(?:\w+\W+){0,2}teams?)\b"
+    r"|functions?|(?:led|leads?|leading)\W+(?:\w+\W+){0,2}teams?)\b"
 )
 _USAGE_PRECEDER_PATTERN = re.compile(
     r"\b(?:using|uses?|with|in|via"

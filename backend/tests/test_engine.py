@@ -355,3 +355,37 @@ def test_proximate_claims_still_flag_ambiguous_aliases(
     result = _rule_based_assessment(phrase, None)
     names = {skill.name for skill in result.skills}
     assert expected <= names
+
+
+# --- AR2-002: remaining homograph aliases must be gated like c/go/led ---
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "Each node in the graph holds a value.",
+        "I listen to Taylor Swift on repeat.",
+        "Our .net profit doubled this year.",
+        "My CV is attached for your review.",
+        "In calculus, a lambda defines an anonymous function.",
+    ],
+)
+def test_homograph_aliases_do_not_invent_skills(phrase: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    assert {skill.name for skill in result.skills} == set()
+
+
+@pytest.mark.parametrize(
+    ("phrase", "expected"),
+    [
+        ("I build REST APIs with Node and Express at work.", {"Node.js", "REST APIs"}),
+        ("I ship mobile apps using Swift every day.", {"iOS Development"}),
+        ("I maintain .NET services at a fintech.", {"C#"}),
+        ("I use CV techniques in my vision startup.", {"Computer Vision"}),
+        ("I deploy AWS Lambda functions in production.", {"AWS"}),
+    ],
+)
+def test_homograph_claims_still_land(phrase: str, expected: set[str]) -> None:
+    result = _rule_based_assessment(phrase, None)
+    names = {skill.name for skill in result.skills}
+    assert expected <= names
