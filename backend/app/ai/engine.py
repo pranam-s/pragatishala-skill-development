@@ -121,6 +121,10 @@ _USAGE_PRECEDER_PATTERN = re.compile(
 # Longest usage verb plus a separating space; the slice a precedence check may
 # look at before the alias.
 _USAGE_PRECEDER_SPAN = 16
+# Bare prepositions read as usage evidence far too often ("I believe in Go",
+# "there's money in Go"); they only count when a neighbouring skill mention
+# corroborates them ("REST APIs with Node") (AR3-008).
+_WEAK_PRECEDERS = frozenset({"in", "with"})
 
 
 @dataclass(frozen=True)
@@ -192,7 +196,12 @@ def _mention_spans(text: str) -> list[tuple[int, int, str, str]]:
 
 
 def _is_skill_context(
-    sentence: str, sentence_left: int, sentence_right: int, alias_start: int, alias_end: int
+    sentence: str,
+    sentence_left: int,
+    sentence_right: int,
+    alias_start: int,
+    alias_end: int,
+    spans: list[tuple[int, int, str, str]],
 ) -> bool:
     """True when the text within ``_CONTEXT_WINDOW`` of the alias reads as skill talk.
 
@@ -202,11 +211,21 @@ def _is_skill_context(
     left = max(sentence_left, alias_start - _CONTEXT_WINDOW)
     right = min(sentence_right, alias_end + _CONTEXT_WINDOW)
     precedes = max(left, alias_start - _USAGE_PRECEDER_SPAN)
+    preceder = _USAGE_PRECEDER_PATTERN.search(sentence[precedes:alias_start].rstrip())
+    if preceder and preceder.group(0) not in _WEAK_PRECEDERS:
+        return True
     return bool(
         _SKILL_CONTEXT_PATTERN.search(sentence, left, right)
         or _EXPERIENCE_PATTERN.search(sentence, left, right)
         or _LEVEL_WORD_PATTERN.search(sentence, left, right)
-        or _USAGE_PRECEDER_PATTERN.search(sentence[precedes:alias_start].rstrip())
+        or (
+            preceder is not None
+            and any(
+                other_start < right and other_end > left
+                for other_start, other_end, _c, _a in spans
+                if not (other_start == alias_start and other_end == alias_end)
+            )
+        )
     )
 
 
@@ -300,7 +319,7 @@ def _score_mentions(text: str) -> dict[str, SkillScore]:
             continue
         if alias in _AMBIGUOUS_ALIASES and _context_required(text, alias, start, end):
             left, right = _sentence_bounds(masked, start, end)
-            if not _is_skill_context(lowered, left, right, start, end):
+            if not _is_skill_context(lowered, left, right, start, end, spans):
                 continue
             if not _alias_sense_holds(lowered, alias, left, right, start, end):
                 continue

@@ -43,7 +43,8 @@ Last updated: 2026-09-12.
    lowercase "led" is treated as the leadership verb it almost always is, so
    only the all-caps acronym ("LED lights") is gated (AR3-001). It
    is deliberately conservative: it will miss unusual phrasings (e.g. "I use
-   Go" with no skill-context word nearby) and unqualified claims default to
+   Go" with no skill-context word nearby, or "works with Go" unless another
+   skill mention sits in the window) and unqualified claims default to
    beginner. Two precision limits remain: a proficiency word between two
    mentions in one clause can bind to both, so reported speech ("Dr. Smith
    says I led the migration and I am an expert in Python") scores like a

@@ -479,6 +479,28 @@ def test_trailing_figure_after_comma_still_binds() -> None:
     assert by_name["Python"].level == "expert"
 
 
+# --- AR3-008: bare prepositions before an alias are not usage evidence ---
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "I believe in Go.",
+        "There's money in Go.",
+        "I trust my gut in Go.",
+    ],
+)
+def test_bare_preceder_prepositions_do_not_vouch(phrase: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    assert {skill.name for skill in result.skills} == set()
+
+
+def test_weak_preceder_counts_with_a_nearby_skill_mention() -> None:
+    result = _rule_based_assessment("I build REST APIs with Node and Express at work.", None)
+    names = {skill.name for skill in result.skills}
+    assert {"Node.js", "REST APIs"} <= names
+
+
 # --- AR3-004: homograph fabrications that survived proximity gating ---
 
 
