@@ -44,9 +44,7 @@ _LEVEL_WORDS: tuple[tuple[str, str], ...] = (
     ("basic", "beginner"),
     ("learning", "beginner"),
 )
-_LEVEL_WORD_PATTERN = re.compile(
-    rf"\b(?:{'|'.join(word for word, _level in _LEVEL_WORDS)})\b"
-)
+_LEVEL_WORD_PATTERN = re.compile(rf"\b(?:{'|'.join(word for word, _level in _LEVEL_WORDS)})\b")
 _SENTENCE_BREAK = re.compile(r"[.!?;\n]")
 # Dots in common abbreviations are not sentence ends; they are blanked (in a
 # same-length mask) before sentence bounds are computed, so "Expert in web

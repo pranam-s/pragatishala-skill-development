@@ -349,9 +349,7 @@ def test_distant_context_words_do_not_gate_ambiguous_alias(phrase: str) -> None:
         ("I led a team of engineers.", {"Leadership"}),
     ],
 )
-def test_proximate_claims_still_flag_ambiguous_aliases(
-    phrase: str, expected: set[str]
-) -> None:
+def test_proximate_claims_still_flag_ambiguous_aliases(phrase: str, expected: set[str]) -> None:
     result = _rule_based_assessment(phrase, None)
     names = {skill.name for skill in result.skills}
     assert expected <= names
