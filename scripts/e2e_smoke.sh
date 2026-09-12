@@ -105,6 +105,11 @@ curl -sf "$BASE/market/insights?role=Data%20Analyst" -H "$AUTH" \
 MARKET2=$(curl -sf "$BASE/market/insights?role=Data%20Analyst" -H "$AUTH")
 printf '%s' "$MARKET2" | json "['cached']" | grep -q "True" || fail "market second call not cached"
 
+echo "== market refresh (cache purge) =="
+MARKET3=$(curl -sf "$BASE/market/insights?role=Data%20Analyst&refresh=true" -H "$AUTH")
+printf '%s' "$MARKET3" | json "['cached']" | grep -q "False" || fail "market refresh did not bypass the cache"
+printf '%s' "$MARKET3" | json "['model_used']" >/dev/null || fail "market response missing model_used"
+
 echo "== refresh =="
 curl -sf -X POST "$BASE/auth/refresh" -H "Content-Type: application/json" \
   -d "{\"refresh_token\":\"$REFRESH\"}" | json "['access_token']" >/dev/null || fail "refresh"
