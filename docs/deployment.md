@@ -87,4 +87,21 @@ scripts/e2e_smoke.sh https://your-host/api/v1
 
 The smoke exercises register/login, generation endpoints, a live SSE event,
 the market cache, refresh rotation and reuse rejection, and the rate limit —
-all against the running deployment.
+all against the running deployment. The smoke deliberately exhausts the auth
+rate-limit bucket for its source IP: wait at least 60 seconds before
+re-running it, or the register call fails with an opaque 429 (AR3-010). The
+market refresh probe consumes one unit of the per-user refresh budget (§4).
+
+## 6. Schema upgrades
+
+Startup runs idempotent, versioned schema upgrades after `create_all`
+(ADR 0008): a legacy `market_reports` table without `model_used` is altered
+automatically. For externally managed databases, the equivalent statement is:
+
+```sql
+ALTER TABLE market_reports ADD COLUMN model_used VARCHAR(120) NULL;
+```
+
+Applied upgrades are recorded in the `schema_upgrades` table. Destructive
+schema changes still follow ADR 0003: Alembic is introduced at the first one
+or before the first production deployment.
