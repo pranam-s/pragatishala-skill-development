@@ -20,6 +20,9 @@ class EventBus:
 
     def __init__(self) -> None:
         self._subscribers: dict[int, set[asyncio.Queue[dict[str, Any]]]] = {}
+        # Monotonic per-user counters: a client seeing a gap in ``seq`` knows
+        # backpressure dropped events and it must re-sync via REST.
+        self._sequences: dict[int, int] = {}
         self._lock = asyncio.Lock()
 
     async def subscribe(self, user_id: int) -> asyncio.Queue[dict[str, Any]]:
@@ -42,13 +45,16 @@ class EventBus:
         """Fan *event* out to every subscriber of *user_id*.
 
         Slow consumers never block publishers: full queues are dropped with a
-        warning (the client can always re-fetch authoritative state via REST).
+        warning. The stamped ``seq`` lets clients detect the gap and re-fetch
+        authoritative state via REST.
         """
         async with self._lock:
             queues = list(self._subscribers.get(user_id, ()))
+            sequence = self._sequences[user_id] = self._sequences.get(user_id, 0) + 1
+        stamped = {**event, "seq": sequence}
         for queue in queues:
             try:
-                queue.put_nowait(event)
+                queue.put_nowait(stamped)
             except asyncio.QueueFull:
                 logger.warning("Dropping event for user %s: subscriber queue full", user_id)
 

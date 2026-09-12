@@ -26,7 +26,10 @@ async def stream_events(current_user: CurrentUser, bus: BusDep) -> StreamingResp
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=keepalive)
                     payload = json.dumps(event, default=str)
-                    yield f"event: {event.get('type', 'message')}\ndata: {payload}\n\n"
+                    yield (
+                        f"id: {event.get('seq', '')}\n"
+                        f"event: {event.get('type', 'message')}\ndata: {payload}\n\n"
+                    )
                 except TimeoutError:
                     yield ": keep-alive\n\n"
         finally:

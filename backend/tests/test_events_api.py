@@ -44,11 +44,13 @@ async def test_stream_yields_events_and_cleans_up(
         user_id,
         {"type": "assessment.completed", "message": "done", "payload": {"id": 1}},
     )
-    # Each yield is one complete SSE frame: event line, data line, blank line.
+    # Each yield is one complete SSE frame: id line (per-user seq), event
+    # line, data line, blank line.
     chunk = await asyncio.wait_for(anext(stream), timeout=5)
-    assert chunk.startswith("event: assessment.completed\ndata: ")
+    assert chunk.startswith("id: 1\nevent: assessment.completed\ndata: ")
     payload = json.loads(chunk.split("data: ", 1)[1].strip())
     assert payload["payload"] == {"id": 1}
+    assert payload["seq"] == 1  # AR2-013: clients detect gaps via seq
 
     # Closing the generator runs the finally-block and unsubscribes.
     await stream.aclose()
