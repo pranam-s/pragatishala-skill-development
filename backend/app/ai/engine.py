@@ -49,8 +49,8 @@ _SENTENCE_BREAK = re.compile(r"[.!?;\n]")
 _AMBIGUOUS_ALIASES: frozenset[str] = frozenset({"c", "go", "led"})
 _SKILL_CONTEXT_PATTERN = re.compile(
     r"\b(?:skills?|languages?|programming|frameworks?|libraries?|stack|"
-    r"developers?|development|engineer|code|coding|databases?|experienced?"
-    r"|expertise|proficien\w*|certifications?|know|known|technolog\w*|tools?)"
+    r"developers?|development|engineers?|code|coding|databases?|experienced?"
+    r"|expertise|proficien\w*|certifications?|know|known|technolog\w*|tools?)\b"
 )
 
 

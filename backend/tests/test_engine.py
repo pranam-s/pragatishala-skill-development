@@ -306,3 +306,19 @@ def test_ambiguous_skills_detected_with_skill_context(phrase: str, expected: set
     result = _rule_based_assessment(phrase, None)
     names = {skill.name for skill in result.skills}
     assert expected <= names
+
+
+# --- AR2-001: context words must not match as prefixes of unrelated words ---
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "The knowledge base article led to a fix.",
+        "They stacked the boxes while I watched the LED display.",
+        "He catalogued every toolset before the LED panel arrived.",
+    ],
+)
+def test_embedded_context_words_do_not_invent_skills(phrase: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    assert {skill.name for skill in result.skills} == set()
