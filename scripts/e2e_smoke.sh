@@ -87,13 +87,42 @@ echo "== SSE =="
 SSE_META=$(curl -s -o /dev/null -w "%{http_code} %{content_type}" -m 2 -H "$AUTH" "$BASE/events" || true)
 printf '%s' "$SSE_META" | grep -q "^200 text/event-stream" || fail "SSE stream ($SSE_META)"
 
+echo "   live event received while streaming"
+SSE_FILE="$(mktemp)"
+curl -s -N -m 4 -H "$AUTH" "$BASE/events" >"$SSE_FILE" || true &
+SSE_PID=$!
+sleep 1
+curl -sf -X POST "$BASE/learning-paths/generate" -H "$AUTH" \
+  -H "Content-Type: application/json" -d '{}' >/dev/null || fail "learning path (SSE trigger)"
+wait "$SSE_PID" || true
+grep -q "event: learning_path.completed" "$SSE_FILE" || fail "SSE event not received"
+grep -q "^id: [0-9]" "$SSE_FILE" || fail "SSE event carries no sequence id"
+rm -f "$SSE_FILE"
+
 echo "== market insights =="
 curl -sf "$BASE/market/insights?role=Data%20Analyst" -H "$AUTH" \
   | json "['insights']['demand_level']" | grep -qE '^(low|moderate|high|very high)$' || fail "market"
+MARKET2=$(curl -sf "$BASE/market/insights?role=Data%20Analyst" -H "$AUTH")
+printf '%s' "$MARKET2" | json "['cached']" | grep -q "True" || fail "market second call not cached"
 
 echo "== refresh =="
 curl -sf -X POST "$BASE/auth/refresh" -H "Content-Type: application/json" \
   -d "{\"refresh_token\":\"$REFRESH\"}" | json "['access_token']" >/dev/null || fail "refresh"
+
+echo "   tampered refresh token rejected (expect 401)"
+CODE=$(status_of -X POST "$BASE/auth/refresh" -H "Content-Type: application/json" \
+  -d '{"refresh_token":"smoke-tampered-token"}')
+[ "$CODE" = "401" ] || fail "tampered refresh returned $CODE"
+
+echo "== rate limit =="
+echo "   auth bucket eventually answers 429"
+CODE=000
+for _ in $(seq 1 12); do
+  CODE=$(status_of -X POST "$BASE/auth/refresh" -H "Content-Type: application/json" \
+    -d '{"refresh_token":"smoke-exhaust-token"}')
+  [ "$CODE" = "429" ] && break
+done
+[ "$CODE" = "429" ] || fail "rate limit never returned 429"
 
 echo
 echo "E2E smoke: ALL CHECKS PASSED"
