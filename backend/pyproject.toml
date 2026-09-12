@@ -9,7 +9,7 @@ dependencies = [
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
     "pydantic-settings>=2.15.0",
-    "pyjwt>=2.13.0",
+    "pyjwt>=2.14.0",
     "python-multipart>=0.0.32",
     "sqlalchemy[asyncio]>=2.0.52",
     "uvicorn[standard]>=0.52.4",
@@ -22,11 +22,11 @@ dev = [
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
-    "ruff>=0.16.6",
+    "ruff>=0.16.7",
 ]
 
 [build-system]
-requires = ["uv_build>=0.12.10,<0.13.0"]
+requires = ["uv_build>=0.12.13,<0.13.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
