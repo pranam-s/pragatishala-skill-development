@@ -84,6 +84,10 @@ class Settings(BaseSettings):
 
     # --- Market analysis cache ---
     market_cache_minutes: int = 24 * 60
+    # Per-user hourly budget for refresh=true cache purges; without it the
+    # cache stops bounding LLM spend for any authenticated user (AR3-006).
+    # 0 disables refresh entirely.
+    market_refresh_per_hour: int = 6
 
     # --- Server-Sent Events ---
     sse_keepalive_seconds: float = 15.0
@@ -158,11 +162,11 @@ class Settings(BaseSettings):
             raise ValueError(msg)
         return value
 
-    @field_validator("market_cache_minutes")
+    @field_validator("market_cache_minutes", "market_refresh_per_hour")
     @classmethod
-    def _non_negative_cache(cls, value: int) -> int:
+    def _non_negative_market_setting(cls, value: int) -> int:
         if value < 0:
-            msg = "market_cache_minutes must be zero or positive"
+            msg = "market settings must be zero or positive"
             raise ValueError(msg)
         return value
 

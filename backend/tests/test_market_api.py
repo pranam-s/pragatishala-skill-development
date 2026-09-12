@@ -75,6 +75,56 @@ async def test_market_cache_disabled_refreshes(client, monkeypatch) -> None:
     assert second.json()["cached"] is False  # zero-minute cache always refreshes
 
 
+async def test_market_refresh_budget_is_per_user(client, monkeypatch) -> None:
+    monkeypatch.setenv("PRAGATISHALA_MARKET_REFRESH_PER_HOUR", "1")
+    get_settings.cache_clear()
+    await register_user(client)
+    first_headers = await login_headers(client)
+    await register_user(client, email="user2@example.com")
+    second_headers = await login_headers(client, email="user2@example.com")
+
+    first = await client.get(
+        "/api/v1/market/insights",
+        headers=first_headers,
+        params={"role": "Data Analyst", "refresh": "true"},
+    )
+    assert first.status_code == 200
+
+    exhausted = await client.get(
+        "/api/v1/market/insights",
+        headers=first_headers,
+        params={"role": "Data Analyst", "refresh": "true"},
+    )
+    assert exhausted.status_code == 429  # AR3-006: the cache must bound LLM spend
+    assert int(exhausted.headers["Retry-After"]) >= 1
+
+    other = await client.get(
+        "/api/v1/market/insights",
+        headers=second_headers,
+        params={"role": "Data Analyst", "refresh": "true"},
+    )
+    assert other.status_code == 200  # the budget is per user, not global
+
+
+async def test_market_refresh_can_be_disabled(client, monkeypatch) -> None:
+    monkeypatch.setenv("PRAGATISHALA_MARKET_REFRESH_PER_HOUR", "0")
+    get_settings.cache_clear()
+    await register_user(client)
+    headers = await login_headers(client)
+
+    response = await client.get(
+        "/api/v1/market/insights",
+        headers=headers,
+        params={"role": "Data Analyst", "refresh": "true"},
+    )
+    assert response.status_code == 403
+
+    normal = await client.get(
+        "/api/v1/market/insights", headers=headers, params={"role": "Data Analyst"}
+    )
+    assert normal.status_code == 200  # non-refresh reads are unaffected
+
+
 async def test_market_unknown_role_uses_fallback(client) -> None:
     await register_user(client)
     headers = await login_headers(client)

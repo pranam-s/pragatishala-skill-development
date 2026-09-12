@@ -73,6 +73,11 @@ off;` is safe to add for the events location).
   SQLite default is for development only (and the MySQL path is currently
   untested — limitations #12).
 - Set `PRAGATISHALA_CORS_ORIGINS` to the real frontend origin(s).
+- `PRAGATISHALA_MARKET_REFRESH_PER_HOUR` (default 6) caps per-user
+  `refresh=true` cache purges on `/market/insights`; `0` disables refresh.
+  Each purge triggers a billable LLM call: the per-IP generation limit is the
+  outer bound on market LLM spend, and this budget is the per-account bound
+  (AR3-006).
 
 ## 5. Smoke test the deployment
 
