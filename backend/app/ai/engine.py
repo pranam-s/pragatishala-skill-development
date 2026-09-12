@@ -81,6 +81,24 @@ _AMBIGUOUS_ALIASES: frozenset[str] = frozenset(
 # "led to a fix" / "led me to believe" is the causative verb, not leadership.
 _CAUSATIVE_LED = re.compile(r"\s*(?:to\b|(?:me|him|her|us|them|you)\s+to\b)")
 _CAUSATIVE_LED_LOOKAHEAD = 20
+# Sense checks for the homographs the context window still mis-vouches
+# (AR3-004). Veto patterns void a gated match: the infinitive ("ready to go
+# home"), the adjective construction ("the swift development of the feature"),
+# and article usage ("a node in the database cluster") are not skill talk.
+# Cue patterns demand domain words nearby for the pairs whose everydays sense
+# otherwise reads exactly like a claim ("Updated my CV with new skills",
+# "wrote a lambda expression").
+_SPAN_VETOES: dict[str, tuple[re.Pattern[str], ...]] = {
+    "go": (re.compile(r"\bto$"),),
+    "swift": (re.compile(r"^\s+development\s+of\b"),),
+    "node": (re.compile(r"\b(?:a|an|the|each|every|this|that|another)\s*$"),),
+}
+_VETO_LOOKBEHIND = 10
+_VETO_LOOKAHEAD = 24
+_ALIAS_CUES: dict[str, re.Pattern[str]] = {
+    "cv": re.compile(r"\b(?:vision|images?|opencv|detection|recognition|models?|techniques?)\b"),
+    "lambda": re.compile(r"\b(?:aws|serverless)\b"),
+}
 _CONTEXT_WINDOW = 24
 _SKILL_CONTEXT_PATTERN = re.compile(
     r"\b(?:skills?|languages?|programming|frameworks?|libraries?|stack|"
@@ -150,11 +168,12 @@ def _mention_spans(text: str) -> list[tuple[int, int, str, str]]:
     """Non-overlapping skill mentions as (start, end, canonical, alias) spans.
 
     Longer aliases win: "core java" scores Java once instead of also matching
-    the bare "java" alias inside it.
+    the bare "java" alias inside it. A trailing hyphen vetoes the match:
+    "go-to person" is a compound word, not the Go language (AR3-004).
     """
     candidates: list[tuple[int, int, str, str]] = []
     for canonical, alias in _alias_pairs():
-        pattern = re.compile(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])")
+        pattern = re.compile(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9-])")
         for match in pattern.finditer(text):
             candidates.append((match.start(), match.end(), canonical, alias))
     candidates.sort(key=lambda span: (span[0], -span[1]))
@@ -241,6 +260,19 @@ def _shared_level_word(text: str, sentence_left: int, mention_start: int) -> str
     return _LEVEL_FOR_WORD[nearest.group(0)]
 
 
+def _alias_sense_holds(
+    text: str, alias: str, left: int, right: int, start: int, end: int
+) -> bool:
+    """False when a veto construction hits or a required domain cue is missing."""
+    before = text[max(left, start - _VETO_LOOKBEHIND) : start].rstrip()
+    after = text[end : min(right, end + _VETO_LOOKAHEAD)]
+    for veto in _SPAN_VETOES.get(alias, ()):
+        if veto.search(before) or veto.search(after):
+            return False
+    cue = _ALIAS_CUES.get(alias)
+    return cue is None or bool(cue.search(text, left, right))
+
+
 def _context_required(text: str, alias: str, start: int, end: int) -> bool:
     """False for lowercase "led": the claim needs no surrounding skill talk."""
     return alias != "led" or text[start:end].isupper()
@@ -258,6 +290,8 @@ def _score_mentions(text: str) -> dict[str, SkillScore]:
         if alias in _AMBIGUOUS_ALIASES and _context_required(text, alias, start, end):
             left, right = _sentence_bounds(masked, start, end)
             if not _is_skill_context(lowered, left, right, start, end):
+                continue
+            if not _alias_sense_holds(lowered, alias, left, right, start, end):
                 continue
         kept.append(spans[index])
     spans = kept

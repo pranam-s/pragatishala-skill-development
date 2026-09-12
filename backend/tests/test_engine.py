@@ -455,6 +455,39 @@ def test_decimal_years_score_as_one_figure(phrase: str, expected: str) -> None:
     assert by_name["Python"].level == expected
 
 
+# --- AR3-004: homograph fabrications that survived proximity gating ---
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "I'm the go-to person for databases.",
+        "The swift development of the feature impressed everyone.",
+        "Updated my CV with new skills.",
+        "I wrote a lambda expression in my code.",
+        "A node in the database cluster failed.",
+        "Ready to go while coding daily.",
+        "I like to go with databases for persistence.",
+    ],
+)
+def test_remaining_homograph_fabrications_stay_silent(phrase: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    assert {skill.name for skill in result.skills} == set()
+
+
+@pytest.mark.parametrize(
+    ("phrase", "expected"),
+    [
+        ("I have swift development experience.", {"iOS Development"}),
+        ("I deploy Lambda functions behind an AWS gateway.", {"AWS"}),
+    ],
+)
+def test_homograph_sense_checks_keep_genuine_claims(phrase: str, expected: set[str]) -> None:
+    result = _rule_based_assessment(phrase, None)
+    names = {skill.name for skill in result.skills}
+    assert expected <= names
+
+
 # --- AR2-004: abbreviation dots must not split skill sentences ---
 
 

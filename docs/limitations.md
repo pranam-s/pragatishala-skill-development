@@ -48,7 +48,13 @@ Last updated: 2026-09-12.
    mentions in one clause can bind to both, so reported speech ("Dr. Smith
    says I led the migration and I am an expert in Python") scores like a
    direct claim, and the
-   ±24-character context window is a heuristic, not parsing. `engine_used`
+   ±24-character context window is a heuristic, not parsing. A few everyday
+   constructions are hard-vetoed near a homograph (the "go" infinitive, "the
+   swift development of …", article usage before "node", hyphen compounds
+   like "go-to"), and "cv"/"lambda" additionally require domain cues nearby
+   (vision terms; aws/serverless) — which costs legitimate phrasings such as
+   "Go-based services" or an unqualified "I write lambdas"
+   (AR3-004). `engine_used`
    tells you when you are reading its output.
 6. **LLM prompt-injection defences are minimal.** User text is fenced in
    `<user_data>` tags and system prompts instruct the model to treat that
