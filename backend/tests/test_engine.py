@@ -479,6 +479,15 @@ def test_trailing_figure_after_comma_still_binds() -> None:
     assert by_name["Python"].level == "expert"
 
 
+# --- AR3-011: ASP.NET is invisible to the leading-dot lookbehind ---
+
+
+def test_asp_dot_net_is_detected_as_csharp() -> None:
+    result = _rule_based_assessment("I build enterprise apps with ASP.NET.", None)
+    names = {skill.name for skill in result.skills}
+    assert names == {"C#"}  # the .net alias cannot double-count inside asp.net
+
+
 # --- AR3-008: bare prepositions before an alias are not usage evidence ---
 
 

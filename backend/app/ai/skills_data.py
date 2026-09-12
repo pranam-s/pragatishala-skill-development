@@ -28,7 +28,7 @@ SKILLS: tuple[SkillDef, ...] = (
     SkillDef("Go", "programming", ("golang",), 7),
     SkillDef("Rust", "programming", (), 6),
     SkillDef("C", "programming", ("c language",), 5),
-    SkillDef("C#", "programming", ("csharp", "c sharp", ".net"), 7),
+    SkillDef("C#", "programming", ("csharp", "c sharp", ".net", "asp.net"), 7),
     SkillDef("SQL", "data", ("mysql", "postgresql", "postgres", "sqlite"), 9),
     SkillDef("HTML", "web", ("html5",), 5),
     SkillDef("CSS", "web", ("css3",), 5),
