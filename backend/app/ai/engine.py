@@ -40,9 +40,7 @@ _EXPERIENCE_PATTERN = re.compile(
 # figure and the mention still voids the binding ("3 years in support, then
 # Python"); an edge-adjacent separator ("Python, 6 years.") is just phrasing.
 _YEARS_PROXIMITY_TOKENS = 6
-_YEARS_GAP_BOUNDARY = re.compile(
-    r"(?:[,;]|\b(?:then|before|after|later|previously|but|however)\b)"
-)
+_YEARS_GAP_BOUNDARY = re.compile(r"(?:[,;]|\b(?:then|before|after|later|previously|but|however)\b)")
 _YEARS_GAP_EDGES = re.compile(r"^[\s,;]+|[\s,;]+$")
 _LEVEL_WORDS: tuple[tuple[str, str], ...] = (
     ("expert", "expert"),
@@ -290,9 +288,7 @@ def _shared_level_word(text: str, sentence_left: int, mention_start: int) -> str
     return _LEVEL_FOR_WORD[nearest.group(0)]
 
 
-def _alias_sense_holds(
-    text: str, alias: str, left: int, right: int, start: int, end: int
-) -> bool:
+def _alias_sense_holds(text: str, alias: str, left: int, right: int, start: int, end: int) -> bool:
     """False when a veto construction hits or a required domain cue is missing."""
     before = text[max(left, start - _VETO_LOOKBEHIND) : start].rstrip()
     after = text[end : min(right, end + _VETO_LOOKAHEAD)]
