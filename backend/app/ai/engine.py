@@ -28,8 +28,12 @@ logger = logging.getLogger(__name__)
 RULE_BASED = "rule_based"
 
 _EXPERIENCE_PATTERN = re.compile(
-    r"(?P<years>\d{1,2})\s*\+?\s*(?:years?|yrs?)(?:\s+of)?(?:\s+(?:with|using|in))?"
+    r"(?P<years>\d{1,2})\s*\+?\s*(?P<unit>years?|yrs?)(?:\s+of)?(?:\s+(?:with|using|in))?"
 )
+# A years figure only counts for a mention a few tokens away; otherwise "3
+# years in support, then moved to Python development" hands support's tenure
+# to Python.
+_YEARS_PROXIMITY_TOKENS = 4
 _LEVEL_WORDS: tuple[tuple[str, str], ...] = (
     ("expert", "expert"),
     ("advanced", "advanced"),
@@ -158,6 +162,22 @@ def _is_skill_context(
     )
 
 
+def _years_for_scope(scope: str, mention_start: int) -> float | None:
+    """First years figure in ``scope`` attributable to the mention at ``mention_start``."""
+    for match in _EXPERIENCE_PATTERN.finditer(scope):
+        # Measure from the "years" word itself: the trailing connector group
+        # ("of/with/in") belongs to the figure's own phrase, not the gap.
+        unit_end = match.end("unit")
+        gap = (
+            scope[unit_end:mention_start]
+            if unit_end <= mention_start
+            else scope[mention_start : match.start()]
+        )
+        if len(gap.split()) <= _YEARS_PROXIMITY_TOKENS:
+            return float(match.group("years"))
+    return None
+
+
 def _scope_bounds(
     spans: list[tuple[int, int, str, str]], index: int, sentence_left: int, sentence_right: int
 ) -> tuple[int, int]:
@@ -213,8 +233,7 @@ def _score_mentions(text: str) -> dict[str, SkillScore]:
                 sentence_left, sentence_right = _sentence_bounds(masked, start, end)
                 scope_left, scope_right = _scope_bounds(spans, index, sentence_left, sentence_right)
                 scope = lowered[scope_left:scope_right]
-                years_match = _EXPERIENCE_PATTERN.search(scope)
-                years = float(years_match.group("years")) if years_match else None
+                years = _years_for_scope(scope, start - scope_left)
                 level = _level_for(scope, hits, years)
                 if _level_rank(level) > best_rank:
                     best_rank = _level_rank(level)

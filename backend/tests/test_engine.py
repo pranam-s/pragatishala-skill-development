@@ -408,3 +408,20 @@ def test_abbreviation_dots_keep_level_words_in_scope(phrase: str) -> None:
     # the nearest mention (Python) instead of losing it to a bogus split.
     assert by_name["Python"].level == "expert"
     assert by_name["SQL"].level == "beginner"
+
+
+# --- AR2-006: experience figures must not leak across domains in a clause ---
+
+
+def test_years_in_another_domain_do_not_bind() -> None:
+    result = _rule_based_assessment(
+        "I spent 3 years in support, then moved to Python development.", None
+    )
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == "beginner"
+
+
+def test_years_following_the_mention_still_bind() -> None:
+    result = _rule_based_assessment("Python developer with 3 years of craft.", None)
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == "advanced"
