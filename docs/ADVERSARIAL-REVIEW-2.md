@@ -54,3 +54,28 @@ Verified good: token decode hardening, SSE backpressure design, AI fallback conf
 - Findings AR2-001…AR2-006 share one root design decision: text-window heuristics on a 50-skill alias table. A single fix that evaluates context *proximity* to the alias (reusing `_scope_bounds`) and gates *all* homograph aliases closes most of them together; the per-finding fix directions still stand independently.
 - The scorer's heuristic nature is disclosed in docs/limitations.md §38, but the specific failure classes above (false negatives on direct claims, homograph survivors) go beyond what that blanket caveat covers; after fixing, re-run the first review's 12 adversarial inputs plus the ~25 probe inputs from this pass as a regression table.
 - A throwaway probe script used for this review was deleted after the pass; every probe input is reproduced verbatim in the findings above.
+
+## Remediation status (post-fix pass, 2026-09-12)
+
+Every finding addressed; each fix landed as its own commit with regression
+tests. Full gates at the end of the pass: backend 232 tests / 99.31%
+line+branch coverage, ruff + mypy strict clean, frontend 37 tests / eslint /
+tsc / build clean, e2e smoke green over live HTTP.
+
+| ID | Status | Notes |
+|----|--------|-------|
+| AR2-001 | fixed | Trailing `\b` added; the stronger gate exposed that `engineer` (singular-only) silently stopped matching "engineers" — made plural-aware. Regression: "The knowledge base article led to a fix." invents nothing. |
+| AR2-002 | fixed | Gated set now {c, go, led, node, swift, cv, .net, lambda}; all five review fabrications tested silent, five genuine claims (incl. "I deploy AWS Lambda functions") tested landing. |
+| AR2-003 | fixed | Gate evaluates a ±24-char window around the alias (clipped to the sentence); a usage verb directly before the alias ("using Go", "with Node") is evidence; `lead/led(s) … team` phrasing counts as Leadership context. All three review sentences behave as required. |
+| AR2-004 | fixed | Abbreviation dots masked (same-length) before sentence-bound computation. "e.g. Python and SQL." now keeps the level word; SQL stays beginner by AR-029 clause binding (level binds to the nearest mention) — the split itself is gone. |
+| AR2-005 | documented | Reported-speech limit recorded in limitations #5; binding level words to the nearest mention with quote/reporting-verb detection is deferred (needs parsing beyond a heuristic scorer). |
+| AR2-006 | fixed | A years figure binds only when the mention sits within 4 tokens before or after the years word (measured from the years word so the of/with/in connector isn't stolen from the gap). "3 years in support, then moved to Python" leaves Python beginner. |
+| AR2-007 | fixed | Placeholder denylist now substring-matches the supplied secret (case-insensitive) — decorated placeholders ("1<placeholder>2345678") are rejected. Fast-path-not-control recorded in limitations #13. |
+| AR2-008 | documented | Entropy-floor residual risk (keyboard walks, repeated blocks) recorded in limitations #13 and the README quickstart; zxcvbn-style segmentation and a generation helper deferred — `secrets.token_urlsafe` remains the prescribed control. |
+| AR2-009 | fixed | `docs/deployment.md` shipped (single worker, `--proxy-headers --forwarded-allow-ips`, nginx limit_req + SSE-safe buffering); ADR 0007 now points at it; limitations #14 records the socket-peer trust posture. |
+| AR2-010 | fixed | Buckets whose every hit is older than the window are dropped every 512 checks (also covers never-revisited keys, not just drained deques). |
+| AR2-011 | fixed | `bucket_for` compares a trailing-slash-insensitive canonical path (root "/" preserved). |
+| AR2-012 | fixed | Message names the failing condition: "too few distinct characters" vs "too repetitive (character distribution too flat)". |
+| AR2-013 | fixed | `EventBus.publish` stamps a monotonic per-user `seq` into every event; the SSE stream emits it as the `id` line. Gap-detection test included. |
+| AR2-014 | fixed | `GET /market/insights?refresh=true` bypasses the TTL and overwrites the cache; `model_used` persisted on the report and returned. |
+| AR2-015 | fixed (partial) | Live SSE event (with seq id), second-market-call `cached=true`, tampered-refresh rejection, and auth-bucket 429 all asserted. Refresh-token reuse *detection* deferred: refresh tokens are not yet revocable (limitations #2, ADR 0002) — the review's assumption does not match shipped behaviour. |

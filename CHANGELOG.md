@@ -6,6 +6,53 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased] — 2026-09-12
 
+Second adversarial pass remediation (findings AR2-001..AR2-015 from
+`docs/ADVERSARIAL-REVIEW-2.md`).
+
+### Fixed
+- Skill engine: the ambiguous-alias gate now requires word-bounded context
+  (`know` no longer matches inside "knowledge"), evaluates that context within
+  a window around the alias instead of anywhere in the sentence, treats a
+  usage verb directly before the alias as evidence, and gates the remaining
+  homographs (node, swift, cv, .net, lambda). Direct claims like "Built a
+  payments service using Go." and "I led a team of five." land again while
+  "At the coding bootcamp I was ready to go." stays silent (AR2-001/002/003).
+- Skill engine: abbreviation dots (e.g./i.e./etc.) no longer split sentences
+  before level-word attribution (AR2-004); experience figures bind only to
+  mentions within a few tokens of the years word (AR2-006).
+- Rate limiting: fully expired buckets are swept every 512 checks so unique
+  keys cannot grow memory without bound (AR2-010); route matching is
+  trailing-slash-insensitive (AR2-011).
+- Config: the low-entropy secret error names the failing condition
+  (distinct chars vs flat distribution) (AR2-012); known placeholders are
+  rejected as substrings, so decorated placeholders fail too (AR2-007).
+
+### Added
+- SSE events carry a monotonic per-user `seq` (also the SSE `id` line) so
+  clients can detect backpressure gaps and re-sync via REST (AR2-013).
+- `GET /market/insights?refresh=true` invalidates a cached report without
+  database access, and the generating LLM model is persisted and returned as
+  `model_used` (AR2-014).
+- `docs/deployment.md`: single-worker posture, real-IP forwarding, proxy-level
+  limits, SSE-safe buffering — the guidance ADR 0007 deferred to (AR2-009).
+
+### Testing
+- e2e smoke now asserts a live SSE event with its sequence id, the second
+  market call serving `cached=true`, tampered-refresh rejection, and a 429
+  from an exhausted auth bucket. Refresh-token reuse *detection* remains
+  deferred (tokens are not yet revocable — limitations #2, ADR 0002)
+  (AR2-015).
+- Backend: 232 tests, 99.31% line+branch coverage. Frontend: 37 tests
+  (unchanged; no frontend code touched).
+
+### Docs
+- limitations #5 states the scorer's remaining precision limits (reported
+  speech, heuristic context window); #13 records that the JWT-secret
+  validator is a sanity floor, not a strength meter; #14 records the
+  socket-peer trust posture (AR2-005/008/009).
+
+## [Unreleased] — 2026-09-12 (first pass)
+
 Adversarial-review remediation pass (findings AR-001..AR-032 from
 `docs/ADVERSARIAL-REVIEW.md`) plus the publication finalization pass
 (AR-033, AR-034).
