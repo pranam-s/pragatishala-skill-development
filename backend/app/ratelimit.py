@@ -80,10 +80,16 @@ class SlidingWindowLimiter:
         self._hits.clear()
 
 
+def _canonical(path: str) -> str:
+    """Slash-insensitive form so '/route/' matches the '/route' rule."""
+    return path.rstrip("/") or "/"
+
+
 def bucket_for(method: str, path: str, rules: Sequence[RouteRule] = RULES) -> str | None:
     """Return the rate-limit bucket for a route, or None when unthrottled."""
+    canonical = _canonical(path)
     for rule_method, rule_path, bucket in rules:
-        if method == rule_method and path == rule_path:
+        if method == rule_method and canonical == _canonical(rule_path):
             return bucket
     return None
 

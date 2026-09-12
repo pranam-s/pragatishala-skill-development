@@ -81,6 +81,12 @@ def test_bucket_for_matches_exact_routes() -> None:
     assert bucket_for("POST", "/api/v1/auth/login/extra") is None
 
 
+def test_bucket_for_matches_trailing_slash() -> None:
+    assert bucket_for("POST", "/api/v1/auth/login/") == AUTH_BUCKET
+    assert bucket_for("GET", "/api/v1/market/insights/") == GENERATION_BUCKET
+    assert bucket_for("POST", "/", rules=(("POST", "/", AUTH_BUCKET),)) == AUTH_BUCKET
+
+
 async def test_auth_bucket_returns_429_with_retry_after(client, monkeypatch) -> None:
     monkeypatch.setenv("PRAGATISHALA_AUTH_RATE_LIMIT_PER_MINUTE", "2")
     get_settings.cache_clear()
