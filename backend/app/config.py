@@ -118,13 +118,17 @@ class Settings(BaseSettings):
         if len(secret.encode()) < _MIN_SECRET_BYTES:
             msg = "PRAGATISHALA_JWT_SECRET_KEY must be at least 32 bytes long"
             raise ValueError(msg)
-        if (
-            len(set(secret)) < _MIN_SECRET_DISTINCT_CHARS
-            or cls._entropy_bits(secret) < _MIN_SECRET_ENTROPY_BITS
-        ):
+        distinct = len(set(secret))
+        entropy = cls._entropy_bits(secret)
+        if distinct < _MIN_SECRET_DISTINCT_CHARS or entropy < _MIN_SECRET_ENTROPY_BITS:
+            detail = (
+                "too few distinct characters"
+                if distinct < _MIN_SECRET_DISTINCT_CHARS
+                else "character distribution too flat (too repetitive)"
+            )
             msg = (
-                "PRAGATISHALA_JWT_SECRET_KEY looks low-entropy (too few distinct "
-                "characters); generate a random secret with the secrets module"
+                f"PRAGATISHALA_JWT_SECRET_KEY looks low-entropy ({detail}); "
+                "generate a random secret with the secrets module"
             )
             raise ValueError(msg)
         return value

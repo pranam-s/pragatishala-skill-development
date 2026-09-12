@@ -80,6 +80,16 @@ def test_low_entropy_secret_rejected(weak: str) -> None:
         Settings(jwt_secret_key=weak)
 
 
+def test_low_entropy_message_names_the_failing_condition() -> None:
+    # 13 distinct chars (passes the distinct floor) but a flat a-heavy
+    # distribution (entropy ~2.3 bits/char): only the entropy branch fires.
+    flat = "a" * 20 + "bcdefghijklm"
+    with pytest.raises(ValidationError, match="too repetitive"):
+        Settings(jwt_secret_key=flat)
+    with pytest.raises(ValidationError, match="too few distinct characters"):
+        Settings(jwt_secret_key="x" * 40)
+
+
 def test_cors_origins_split_from_string() -> None:
     settings = Settings(**VALID, cors_origins="http://a.com, http://b.com ,,")
     assert settings.cors_origins == ["http://a.com", "http://b.com"]
