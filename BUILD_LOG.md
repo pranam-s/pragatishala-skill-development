@@ -2,6 +2,39 @@
 
 Honest, reverse-chronological log of significant work sessions.
 
+## 2026-09-13 — Publication re-pass at final HEAD (fourth pass, AR4)
+
+- **Hostile re-review at HEAD `1a66c49` with executed probes**, focused on the
+  AR2/AR3 remediation waves (schema-upgrade runner, market-refresh budget,
+  refund middleware, engine veto/binding logic). Two real findings fixed with
+  regression tests, one suspicion refuted and pinned instead:
+  - `deps.user_id_from_subject` crashed with `ValueError` on non-ASCII digit
+    subjects ("²" passes `str.isdigit`, `int()` rejects it) — the
+    malformed-subject defense path turned into a 500; now ASCII-digits-only.
+  - `engine._shared_level_word` shared a clause's level word across ANOTHER
+    skill's experience figure ("Expert in Python, 5 years with Go and Rust."
+    scored Rust expert); a years figure in the gap is now an attribution
+    boundary, consistent with AR3-005's doctrine.
+  - HEAD-rate-limit bypass suspicion was refuted by execution: FastAPI
+    returns 405 for HEAD on GET routes (no auto-HEAD like plain Starlette),
+    so the handler never runs; a test pins the 405 and proves the bucket is
+    not consumed. Full findings incl. explicitly empty categories:
+    [docs/PUBLICATION-PASS.md](docs/PUBLICATION-PASS.md).
+- **Dependencies re-verified against live PyPI/npm** (2026-09-13): everything
+  locked at the newest release; stale floors raised (pyjwt ≥2.14.0,
+  ruff ≥0.16.7, uv_build ≥0.12.13). TypeScript stays on 6.0.3 —
+  typescript-eslint 8.70.0 peers `typescript <6.1.0`, so TS 7.0.2 is
+  ecosystem-blocked.
+- **Docs verified by execution:** README quickstart (uv sync → .env →
+  uvicorn → healthz/docs/register/login/market), the Vite dev-proxy path
+  (register 201 + market 200 through :5174), and the full
+  `scripts/e2e_smoke.sh` (ALL CHECKS PASSED, including the AR3 market-refresh
+  and SSE-seq probes). Stale test counts synced to 289 (README, AGENTS.md,
+  limitations.md, CHANGELOG).
+- Gates at close: pytest 289 passed (99.36% line+branch), ruff check/format
+  and mypy strict clean; frontend eslint clean, 37 vitest passed, tsc+vite
+  build clean.
+
 ## 2026-09-12 — Third adversarial pass (AR3) remediation
 
 - **Review:** [docs/ADVERSARIAL-REVIEW-3.md](docs/ADVERSARIAL-REVIEW-3.md)

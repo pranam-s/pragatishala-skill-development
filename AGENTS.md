@@ -82,14 +82,22 @@ throughout development. Current-state detail lives in [README.md](README.md),
 *   Progress analytics, interview prep, job-board integrations, multi-language
     UI, resume PDF export.
 
-## Current Status (updated 2026-09-12)
+## Current Status (updated 2026-09-13)
 
 *   **Overall:** Phase 1 + Phase 2 functional end-to-end. Full user journey
     (register → login → assessment → learning path → resume → market →
     refresh → SSE) verified over live HTTP and through the Vite dev proxy.
 *   **Backend:** FastAPI app factory (`app/main.py`), async SQLAlchemy
-    (SQLite dev / MySQL-ready), strict mypy, Ruff, 278 pytest tests with
+    (SQLite dev / MySQL-ready), strict mypy, Ruff, 289 pytest tests with
     99.36% line+branch coverage (≥90% enforced). See ADR 0001–0008.
+*   **Fourth pass / publication re-check (2026-09-13):** hostile re-review at
+    final HEAD with executed probes; findings and explicitly empty review
+    categories recorded in `docs/PUBLICATION-PASS.md`. Fixes: JWT subject
+    parsing hardened (non-ASCII digits crashed instead of returning None),
+    engine level-word sharing stopped at another skill's years figure; the
+    FastAPI HEAD-on-GET 405 shape is pinned so the rate-limit audit stays
+    honest. All dependencies re-verified against live PyPI/npm; the e2e
+    smoke and the README quickstart were re-executed against this HEAD.
 *   **Third adversarial pass (2026-09-12):** all 11 findings from
     `docs/ADVERSARIAL-REVIEW-3.md` fixed with per-finding regression tests;
     resolution table appended to that review (led/LED case disambiguation,

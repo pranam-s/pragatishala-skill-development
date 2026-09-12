@@ -4,6 +4,37 @@ All notable changes to PragatiShala are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — 2026-09-13 (fourth pass, publication re-check)
+
+Hostile re-review of the AR2/AR3 remediation waves at final HEAD, with
+executed probes; findings and explicitly empty categories in
+`docs/PUBLICATION-PASS.md`.
+
+### Fixed
+- Auth: JWT subjects with non-ASCII digit characters ("²") crashed subject
+  parsing with a `ValueError` (a 500 where 401 belongs); parsing now accepts
+  ASCII digits only and degrades every malformed subject to "unauthenticated".
+- Skill engine: a clause's level word is no longer shared across another
+  skill's experience figure ("Expert in Python, 5 years with Go and Rust."
+  no longer scores Rust as expert); a years figure in the gap is an
+  attribution boundary, consistent with AR3-005.
+
+### Verified (no change needed)
+- FastAPI answers 405 for HEAD on GET routes, so HEAD cannot bypass the
+  rate-limit buckets to reach billable handlers; the 405 shape and the
+  unconsumed bucket are now pinned by tests.
+- Every dependency re-verified against live PyPI/npm (2026-09-13): all
+  locked versions are the newest releases. Stale floors raised: pyjwt
+  ≥2.14.0, ruff ≥0.16.7, uv_build ≥0.12.13. TypeScript stays on 6.0.3:
+  typescript-eslint 8.70.0 peers `typescript <6.1.0`, so the released
+  TS 7.0.2 is ecosystem-blocked for lint.
+- README quickstart, the Vite dev-proxy path, and the full
+  `scripts/e2e_smoke.sh` re-executed against this HEAD (all passed).
+
+### Testing
+- Backend: 289 tests (was 278), 99.36% line+branch coverage held.
+  Frontend unchanged: 37 Vitest tests, ESLint/tsc/build clean.
+
 ## [Unreleased] — 2026-09-12 (third pass)
 
 Third adversarial pass remediation (findings AR3-001..AR3-011 from

@@ -105,7 +105,7 @@ Keys are read from the environment only — never hardcoded, never committed.
 cd backend
 uv run ruff check app tests && uv run ruff format --check app tests
 uv run mypy                     # strict
-uv run pytest                   # 278 tests, ≥90% line + branch coverage enforced
+uv run pytest                   # 289 tests, ≥90% line + branch coverage enforced
 
 # Frontend
 cd frontend
