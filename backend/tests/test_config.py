@@ -60,6 +60,14 @@ def test_placeholder_with_different_case_or_padding_rejected() -> None:
             Settings(jwt_secret_key=variant)
 
 
+def test_decorated_placeholder_rejected() -> None:
+    """Placeholders buried inside longer keys must still trip the denylist."""
+    decorated = "1change-me-at-least-32-bytes-long2345678"
+    assert len(decorated.encode()) >= 32
+    with pytest.raises(ValidationError, match="publicly-known placeholder"):
+        Settings(jwt_secret_key=decorated)
+
+
 def test_random_32_byte_secrets_accepted() -> None:
     for generated in (secrets.token_urlsafe(32), secrets.token_hex(32), secrets.token_hex(16)):
         settings = Settings(jwt_secret_key=generated)

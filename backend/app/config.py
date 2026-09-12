@@ -17,7 +17,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Secrets that are publicly known (committed examples, framework defaults).
 # Copying any of them into a real deployment would let anyone forge JWTs, so
-# the settings validator refuses to boot on an exact (case-insensitive) match.
+# the settings validator refuses to boot when one appears *inside* the
+# supplied secret (case-insensitive): an exact-match list alone would accept
+# decorated placeholders like "1<placeholder>2345678".
 _KNOWN_PLACEHOLDER_SECRETS: frozenset[str] = frozenset(
     {
         "change-me-at-least-32-bytes-long",
@@ -108,7 +110,8 @@ class Settings(BaseSettings):
         also refuses placeholder literals and degenerate character sets.
         """
         secret = value.get_secret_value()
-        if secret.strip().casefold() in _KNOWN_PLACEHOLDER_SECRETS:
+        stripped = secret.strip().casefold()
+        if any(placeholder in stripped for placeholder in _KNOWN_PLACEHOLDER_SECRETS):
             msg = (
                 "PRAGATISHALA_JWT_SECRET_KEY is a publicly-known placeholder; "
                 'generate a real secret, e.g. python -c "import secrets; '
