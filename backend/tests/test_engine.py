@@ -355,6 +355,55 @@ def test_proximate_claims_still_flag_ambiguous_aliases(phrase: str, expected: se
     assert expected <= names
 
 
+# --- AR3-001: lowercase "led" is the dominant leadership claim; only the
+# all-caps acronym "LED" stays gated. X01 is a true AR2 regression (round 1
+# scored it Leadership=expert; the AR2-003 gate dropped Leadership entirely).
+# L01-L04 were under-detected in round 1 too - the gate cemented that. L05-L06
+# are the narrow phrasings the gate kept working; they must stay detected.
+
+
+@pytest.mark.parametrize(
+    ("repro_id", "phrase"),
+    [
+        ("X01", "I led the migration and I am an expert in Python."),
+        ("L01", "I led multiple projects end to end."),
+        ("L02", "I led the rollout of our CI pipeline and mentored interns."),
+        ("L03", "I led the initiative at my company."),
+        ("L04", "I led the migration of our platform to Kubernetes."),
+        ("L05", "I led a team of five."),
+        ("L06", "I led the development of the payments platform."),
+    ],
+)
+def test_lowercase_led_is_a_leadership_claim(repro_id: str, phrase: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    names = {skill.name for skill in result.skills}
+    assert "Leadership" in names, repro_id
+
+
+def test_led_migration_regression_scores_both_skills() -> None:
+    result = _rule_based_assessment("I led the migration and I am an expert in Python.", None)
+    by_name = {skill.name: skill for skill in result.skills}
+    # Round-1 parity for the level: the scope mechanics hand the co-sentence
+    # level word to both mentions (limitations #5); the regression was the
+    # missing detection, which both assertions pin down.
+    assert by_name["Leadership"].level == "expert"
+    assert by_name["Python"].level == "expert"
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "I replaced the LED lights in the studio.",
+        "The LED at the stadium flickered all night.",
+        "The knowledge base article led to a fix.",  # causative "led to" (AR2-001)
+        "Reading led me to believe otherwise.",  # causative "led me to"
+    ],
+)
+def test_led_acronym_and_causative_stay_silent(phrase: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    assert {skill.name for skill in result.skills} == set()
+
+
 # --- AR2-002: remaining homograph aliases must be gated like c/go/led ---
 
 

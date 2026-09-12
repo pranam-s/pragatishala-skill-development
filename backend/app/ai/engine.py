@@ -59,9 +59,16 @@ _ABBREVIATION_PATTERN = re.compile(
 # matters - a context word elsewhere in the sentence ("coding bootcamp ... I
 # was ready to go") must not vouch for a distant homograph - and a usage verb
 # directly before the alias ("built a service using Go") is evidence itself.
+# Exception (AR3-001): lowercase "led" is a claim by default - it is the
+# dominant resume phrasing for Leadership and almost never anything else.
+# Only the all-caps acronym ("LED lights") needs the context gate; matching
+# on the lowercased text used to erase exactly that distinction.
 _AMBIGUOUS_ALIASES: frozenset[str] = frozenset(
     {"c", "go", "led", "node", "swift", "cv", ".net", "lambda"}
 )
+# "led to a fix" / "led me to believe" is the causative verb, not leadership.
+_CAUSATIVE_LED = re.compile(r"\s*(?:to\b|(?:me|him|her|us|them|you)\s+to\b)")
+_CAUSATIVE_LED_LOOKAHEAD = 20
 _CONTEXT_WINDOW = 24
 _SKILL_CONTEXT_PATTERN = re.compile(
     r"\b(?:skills?|languages?|programming|frameworks?|libraries?|stack|"
@@ -204,6 +211,11 @@ def _scope_bounds(
     return left, right
 
 
+def _context_required(text: str, alias: str, start: int, end: int) -> bool:
+    """False for lowercase "led": the claim needs no surrounding skill talk."""
+    return alias != "led" or text[start:end].isupper()
+
+
 def _score_mentions(text: str) -> dict[str, SkillScore]:
     """Score every skill mention using only its own clause as evidence."""
     lowered = text.lower()
@@ -211,7 +223,9 @@ def _score_mentions(text: str) -> dict[str, SkillScore]:
     spans = _mention_spans(lowered)
     kept: list[tuple[int, int, str, str]] = []
     for index, (start, end, _canonical, alias) in enumerate(spans):
-        if alias in _AMBIGUOUS_ALIASES:
+        if alias == "led" and _CAUSATIVE_LED.search(lowered, end, end + _CAUSATIVE_LED_LOOKAHEAD):
+            continue
+        if alias in _AMBIGUOUS_ALIASES and _context_required(text, alias, start, end):
             left, right = _sentence_bounds(masked, start, end)
             if not _is_skill_context(lowered, left, right, start, end):
                 continue

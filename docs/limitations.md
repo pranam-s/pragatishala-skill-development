@@ -38,13 +38,16 @@ Last updated: 2026-09-12.
 5. **Rule-based quality is heuristic.** The offline engine scores each skill
    mention within its own sentence (level words and year figures bind to the
    clause they appear in, and year figures must sit within a few tokens of the
-   mention) and rejects homograph aliases ("go", "led", "c", "node", "swift",
-   "cv", ".net", "lambda") unless skill-talk evidence sits near the word. It
+   mention) and rejects homograph aliases ("go", "c", "node", "swift",
+   "cv", ".net", "lambda") unless skill-talk evidence sits near the word;
+   lowercase "led" is treated as the leadership verb it almost always is, so
+   only the all-caps acronym ("LED lights") is gated (AR3-001). It
    is deliberately conservative: it will miss unusual phrasings (e.g. "I use
    Go" with no skill-context word nearby) and unqualified claims default to
-   beginner. Two precision limits remain: a proficiency word binds to the
-   nearest mention, so reported speech ("Dr. Smith says I led the migration
-   and I am an expert in Python") can still over-credit a skill, and the
+   beginner. Two precision limits remain: a proficiency word between two
+   mentions in one clause can bind to both, so reported speech ("Dr. Smith
+   says I led the migration and I am an expert in Python") scores like a
+   direct claim, and the
    ±24-character context window is a heuristic, not parsing. `engine_used`
    tells you when you are reading its output.
 6. **LLM prompt-injection defences are minimal.** User text is fenced in
