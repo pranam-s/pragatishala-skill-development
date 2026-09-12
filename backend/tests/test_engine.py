@@ -438,6 +438,23 @@ def test_homograph_claims_still_land(phrase: str, expected: set[str]) -> None:
     assert expected <= names
 
 
+# --- AR3-002: decimal years are one figure, not their fraction digits ---
+
+
+@pytest.mark.parametrize(
+    ("phrase", "expected"),
+    [
+        ("I have 3.5 years of Python experience.", "advanced"),
+        ("0.5 years with Python so far.", "beginner"),
+        ("1.5 yrs using Python at work.", "intermediate"),
+    ],
+)
+def test_decimal_years_score_as_one_figure(phrase: str, expected: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == expected
+
+
 # --- AR2-004: abbreviation dots must not split skill sentences ---
 
 

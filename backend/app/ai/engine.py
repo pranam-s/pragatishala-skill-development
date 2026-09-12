@@ -27,8 +27,12 @@ logger = logging.getLogger(__name__)
 
 RULE_BASED = "rule_based"
 
+# A years figure may carry a decimal fraction ("3.5 years"); without the
+# fraction group the regex grabbed only the digit(s) after the dot, scoring
+# "0.5 years" as 5 (AR3-002). The lookbehind keeps "3.55" or "105" from
+# matching as a bare "5"/"05".
 _EXPERIENCE_PATTERN = re.compile(
-    r"(?P<years>\d{1,2})\s*\+?\s*(?P<unit>years?|yrs?)(?:\s+of)?(?:\s+(?:with|using|in))?"
+    r"(?<![\d.])(?P<years>\d{1,2}(?:\.\d)?)\s*\+?\s*(?P<unit>years?|yrs?)(?:\s+of)?(?:\s+(?:with|using|in))?"
 )
 # A years figure only counts for a mention a few tokens away; otherwise "3
 # years in support, then moved to Python development" hands support's tenure
@@ -46,12 +50,14 @@ _LEVEL_WORDS: tuple[tuple[str, str], ...] = (
 )
 _LEVEL_WORD_PATTERN = re.compile(rf"\b(?:{'|'.join(word for word, _level in _LEVEL_WORDS)})\b")
 _SENTENCE_BREAK = re.compile(r"[.!?;\n]")
-# Dots in common abbreviations are not sentence ends; they are blanked (in a
-# same-length mask) before sentence bounds are computed, so "Expert in web
-# technologies, e.g. Python and SQL." keeps its level word in scope.
+# Dots that are not sentence ends are blanked (in a same-length mask) before
+# sentence bounds are computed: abbreviation dots ("Expert in web
+# technologies, e.g. Python and SQL.") and decimal points in year figures
+# ("0.5 years with Python") both live inside sentences (AR2-004, AR3-002).
 _ABBREVIATION_PATTERN = re.compile(
     r"(?i)(?<![a-z0-9])(?:e\.g|i\.e|etc|vs|dr|mr|mrs|ms|prof|jr|sr|st)\.(?=\s|$)"
 )
+_DECIMAL_POINT_PATTERN = re.compile(r"(?<=\d)\.(?=\d)")
 
 # Aliases that double as ordinary English words ("ready to go", "LED lights",
 # "grade A B C") are accepted only when the text near the alias reads as skill
@@ -120,9 +126,10 @@ def _level_for(skill_text: str, mention_count: int, years: float | None) -> str:
     return "beginner"
 
 
-def _abbreviation_mask(text: str) -> str:
-    """Same-length copy of ``text`` with abbreviation dots blanked."""
-    return _ABBREVIATION_PATTERN.sub(lambda m: m.group(0).replace(".", "\x00"), text)
+def _sentence_dot_mask(text: str) -> str:
+    """Same-length copy of ``text`` with non-sentence dots blanked."""
+    masked = _ABBREVIATION_PATTERN.sub(lambda m: m.group(0).replace(".", "\x00"), text)
+    return _DECIMAL_POINT_PATTERN.sub("\x00", masked)
 
 
 def _sentence_bounds(text: str, start: int, end: int) -> tuple[int, int]:
@@ -219,7 +226,7 @@ def _context_required(text: str, alias: str, start: int, end: int) -> bool:
 def _score_mentions(text: str) -> dict[str, SkillScore]:
     """Score every skill mention using only its own clause as evidence."""
     lowered = text.lower()
-    masked = _abbreviation_mask(lowered)
+    masked = _sentence_dot_mask(lowered)
     spans = _mention_spans(lowered)
     kept: list[tuple[int, int, str, str]] = []
     for index, (start, end, _canonical, alias) in enumerate(spans):
