@@ -389,3 +389,22 @@ def test_homograph_claims_still_land(phrase: str, expected: set[str]) -> None:
     result = _rule_based_assessment(phrase, None)
     names = {skill.name for skill in result.skills}
     assert expected <= names
+
+
+# --- AR2-004: abbreviation dots must not split skill sentences ---
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "Expert in web technologies, e.g. Python and SQL.",
+        "Expert in backend languages, i.e. Python and SQL.",
+    ],
+)
+def test_abbreviation_dots_keep_level_words_in_scope(phrase: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    by_name = {skill.name: skill for skill in result.skills}
+    # The level word stays in the sentence; AR-029 clause binding ties it to
+    # the nearest mention (Python) instead of losing it to a bogus split.
+    assert by_name["Python"].level == "expert"
+    assert by_name["SQL"].level == "beginner"

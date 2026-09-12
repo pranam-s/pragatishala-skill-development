@@ -44,6 +44,12 @@ _LEVEL_WORD_PATTERN = re.compile(
     rf"\b(?:{'|'.join(word for word, _level in _LEVEL_WORDS)})\b"
 )
 _SENTENCE_BREAK = re.compile(r"[.!?;\n]")
+# Dots in common abbreviations are not sentence ends; they are blanked (in a
+# same-length mask) before sentence bounds are computed, so "Expert in web
+# technologies, e.g. Python and SQL." keeps its level word in scope.
+_ABBREVIATION_PATTERN = re.compile(
+    r"(?i)(?<![a-z0-9])(?:e\.g|i\.e|etc|vs|dr|mr|mrs|ms|prof|jr|sr|st)\.(?=\s|$)"
+)
 
 # Aliases that double as ordinary English words ("ready to go", "LED lights",
 # "grade A B C") are accepted only when the text near the alias reads as skill
@@ -98,6 +104,11 @@ def _level_for(skill_text: str, mention_count: int, years: float | None) -> str:
     if mention_count == 2:
         return "intermediate"
     return "beginner"
+
+
+def _abbreviation_mask(text: str) -> str:
+    """Same-length copy of ``text`` with abbreviation dots blanked."""
+    return _ABBREVIATION_PATTERN.sub(lambda m: m.group(0).replace(".", "\x00"), text)
 
 
 def _sentence_bounds(text: str, start: int, end: int) -> tuple[int, int]:
@@ -173,11 +184,12 @@ def _scope_bounds(
 def _score_mentions(text: str) -> dict[str, SkillScore]:
     """Score every skill mention using only its own clause as evidence."""
     lowered = text.lower()
+    masked = _abbreviation_mask(lowered)
     spans = _mention_spans(lowered)
     kept: list[tuple[int, int, str, str]] = []
     for index, (start, end, _canonical, alias) in enumerate(spans):
         if alias in _AMBIGUOUS_ALIASES:
-            left, right = _sentence_bounds(lowered, start, end)
+            left, right = _sentence_bounds(masked, start, end)
             if not _is_skill_context(lowered, left, right, start, end):
                 continue
         kept.append(spans[index])
@@ -198,7 +210,7 @@ def _score_mentions(text: str) -> dict[str, SkillScore]:
             for index, (start, end, _canonical, span_alias) in enumerate(spans):
                 if span_alias != alias:
                     continue
-                sentence_left, sentence_right = _sentence_bounds(lowered, start, end)
+                sentence_left, sentence_right = _sentence_bounds(masked, start, end)
                 scope_left, scope_right = _scope_bounds(spans, index, sentence_left, sentence_right)
                 scope = lowered[scope_left:scope_right]
                 years_match = _EXPERIENCE_PATTERN.search(scope)
