@@ -594,6 +594,20 @@ def test_level_word_sharing_stops_at_attribution_boundaries(phrase: str, skill: 
     assert by_name[skill].level == "beginner"
 
 
+def test_level_word_sharing_stops_at_another_skills_years_figure() -> None:
+    """A years figure re-anchors attribution; the level word may not cross it.
+
+    'Expert' governs Python and the figure quantifies Go; Rust (a sibling of
+    Go, not of Python) must stay at its mention-only level instead of
+    inheriting Python's expert across Go's experience phrase.
+    """
+    result = _rule_based_assessment("Expert in Python, 5 years with Go and Rust.", None)
+    by_name = {s.name: s for s in result.skills}
+    assert by_name["Python"].level == "expert"
+    assert by_name["Go"].level == "expert"  # its own 5-year figure
+    assert by_name["Rust"].level == "beginner"  # mention only, not Python's expert
+
+
 # --- AR2-006: experience figures must not leak across domains in a clause ---
 
 

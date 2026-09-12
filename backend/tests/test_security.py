@@ -5,6 +5,7 @@ from datetime import timedelta
 import jwt
 import pytest
 from app.config import Settings, get_settings
+from app.deps import user_id_from_subject
 from app.security import (
     _JWT_AUDIENCE,
     _JWT_ISSUER,
@@ -142,3 +143,18 @@ def test_jwt_algorithm_locked_to_hs_family() -> None:
         Settings(jwt_secret_key=SECRET, jwt_algorithm="none")
     with pytest.raises(ValueError, match="Input should be"):
         Settings(jwt_secret_key=SECRET, jwt_algorithm="RS256")
+
+
+# --- JWT subject parsing: malformed subjects degrade to None, never crash ---
+
+
+def test_subject_parsing_accepts_decimal_ids() -> None:
+    assert user_id_from_subject("42") == 42
+    assert user_id_from_subject("0") == 0
+
+
+@pytest.mark.parametrize("subject", ["", " 12", "+1", "-1", "4 2", "²", "١٢", "abc"])
+def test_subject_parsing_rejects_malformed_subjects(subject: str) -> None:
+    # Non-ASCII digit characters ("²") pass str.isdigit but int() rejects them;
+    # the parser must return None instead of raising (a 500 where 401 belongs).
+    assert user_id_from_subject(subject) is None

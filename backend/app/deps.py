@@ -57,8 +57,12 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
 def user_id_from_subject(subject: str) -> int | None:
-    """Parse a JWT subject into a user id, or None when malformed."""
-    return int(subject) if subject.isdigit() else None
+    """Parse a JWT subject into a user id, or None when malformed.
+
+    ASCII digits only: ``str.isdigit`` also accepts characters like "²" that
+    ``int()`` rejects, which would turn this defensive path into a 500.
+    """
+    return int(subject) if subject.isascii() and subject.isdigit() else None
 
 
 async def get_user_by_email(session: AsyncSession, email: str) -> User | None:

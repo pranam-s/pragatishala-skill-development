@@ -87,6 +87,22 @@ def test_bucket_for_matches_trailing_slash() -> None:
     assert bucket_for("POST", "/", rules=(("POST", "/", AUTH_BUCKET),)) == AUTH_BUCKET
 
 
+async def test_head_requests_are_rejected_before_consuming_the_bucket(client, monkeypatch) -> None:
+    """FastAPI 405s HEAD on GET routes (no auto-HEAD), so no budget is drawn.
+
+    Guards the bypass audit: if HEAD ever started executing the handler, the
+    generation bucket must cover it instead of leaving a free pass.
+    """
+    headers = await login_headers(client)
+    monkeypatch.setenv("PRAGATISHALA_GENERATION_RATE_LIMIT_PER_MINUTE", "1")
+    get_settings.cache_clear()
+    probe = await client.head("/api/v1/market/insights", headers=headers, params={"role": "data"})
+    assert probe.status_code == 405
+    # The rejected HEAD consumed nothing: the real GET still has its slot.
+    served = await client.get("/api/v1/market/insights", headers=headers, params={"role": "data"})
+    assert served.status_code == 200
+
+
 def test_limiter_refund_removes_the_last_hit() -> None:
     limiter = SlidingWindowLimiter()
     assert limiter.check("key", 1)[0]

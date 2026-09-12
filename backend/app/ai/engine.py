@@ -275,15 +275,19 @@ def _shared_level_word(text: str, sentence_left: int, mention_start: int) -> str
     """Level word governing a list from before its first member, if any.
 
     Reading backwards from the mention, the nearest level word in the sentence
-    is shared - unless a discourse marker sits between it and the mention, in
-    which case the word belongs to a separate attribution.
+    is shared - unless an attribution boundary sits between it and the mention,
+    in which case the word belongs to a separate attribution. Both discourse
+    markers and another skill's experience figure are boundaries: a years
+    figure re-anchors evidence to its own mention ("Expert in Python, 5 years
+    with Go and Rust" leaves Rust at its mention-only level).
     """
     region = text[sentence_left:mention_start]
     matches = list(_LEVEL_WORD_PATTERN.finditer(region))
     if not matches:
         return None
     nearest = matches[-1]
-    if _CLAUSE_BOUNDARY.search(region[nearest.end() :]):
+    gap = region[nearest.end() :]
+    if _CLAUSE_BOUNDARY.search(gap) or _EXPERIENCE_PATTERN.search(gap):
         return None
     return _LEVEL_FOR_WORD[nearest.group(0)]
 
