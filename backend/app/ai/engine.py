@@ -36,8 +36,14 @@ _EXPERIENCE_PATTERN = re.compile(
 )
 # A years figure only counts for a mention a few tokens away; otherwise "3
 # years in support, then moved to Python development" hands support's tenure
-# to Python.
-_YEARS_PROXIMITY_TOKENS = 4
+# to Python. Within the budget, a comma or discourse marker between the
+# figure and the mention still voids the binding ("3 years in support, then
+# Python"); an edge-adjacent separator ("Python, 6 years.") is just phrasing.
+_YEARS_PROXIMITY_TOKENS = 6
+_YEARS_GAP_BOUNDARY = re.compile(
+    r"(?:[,;]|\b(?:then|before|after|later|previously|but|however)\b)"
+)
+_YEARS_GAP_EDGES = re.compile(r"^[\s,;]+|[\s,;]+$")
 _LEVEL_WORDS: tuple[tuple[str, str], ...] = (
     ("expert", "expert"),
     ("advanced", "advanced"),
@@ -204,6 +210,11 @@ def _is_skill_context(
     )
 
 
+def _gap_is_attributional(gap: str) -> bool:
+    """False when a discourse boundary sits between the figure and the mention."""
+    return not _YEARS_GAP_BOUNDARY.search(_YEARS_GAP_EDGES.sub("", gap))
+
+
 def _years_for_scope(scope: str, mention_start: int) -> float | None:
     """First years figure in ``scope`` attributable to the mention at ``mention_start``."""
     for match in _EXPERIENCE_PATTERN.finditer(scope):
@@ -215,7 +226,7 @@ def _years_for_scope(scope: str, mention_start: int) -> float | None:
             if unit_end <= mention_start
             else scope[mention_start : match.start()]
         )
-        if len(gap.split()) <= _YEARS_PROXIMITY_TOKENS:
+        if _gap_is_attributional(gap) and len(gap.split()) <= _YEARS_PROXIMITY_TOKENS:
             return float(match.group("years"))
     return None
 

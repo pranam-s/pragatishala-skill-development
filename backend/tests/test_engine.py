@@ -455,6 +455,30 @@ def test_decimal_years_score_as_one_figure(phrase: str, expected: str) -> None:
     assert by_name["Python"].level == expected
 
 
+# --- AR3-005: discourse boundaries void years binding; the no-boundary
+# token budget widens to six ---
+
+
+def test_years_before_a_discourse_boundary_do_not_bind() -> None:
+    result = _rule_based_assessment("3 years in support, then Python.", None)
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == "beginner"  # support's tenure, not Python's
+
+
+def test_long_gap_without_boundary_still_binds() -> None:
+    result = _rule_based_assessment(
+        "10 years designing and building data pipelines in Python.", None
+    )
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == "expert"
+
+
+def test_trailing_figure_after_comma_still_binds() -> None:
+    result = _rule_based_assessment("Python, 6 years.", None)
+    by_name = {skill.name: skill for skill in result.skills}
+    assert by_name["Python"].level == "expert"
+
+
 # --- AR3-004: homograph fabrications that survived proximity gating ---
 
 
