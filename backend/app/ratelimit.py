@@ -41,9 +41,14 @@ RULES: tuple[RouteRule, ...] = (
 class SlidingWindowLimiter:
     """Sliding-window request counter keyed by arbitrary strings."""
 
+    # Sweep cadence: fully-expired buckets are dropped once every N checks so
+    # a flood of unique keys cannot grow memory without bound.
+    _SWEEP_EVERY = 512
+
     def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
         self._clock = clock
         self._hits: dict[str, deque[float]] = defaultdict(deque)
+        self._checks = 0
 
     def check(self, key: str, limit: int, window: float = WINDOW_SECONDS) -> tuple[bool, int]:
         """Record a hit for *key*; return ``(allowed, retry_after_seconds)``.
@@ -59,7 +64,16 @@ class SlidingWindowLimiter:
         if len(hits) >= limit:
             return False, max(1, math.ceil(hits[0] + window - now))
         hits.append(now)
+        self._checks += 1
+        if self._checks % self._SWEEP_EVERY == 0:
+            self._drop_expired(cutoff)
         return True, 0
+
+    def _drop_expired(self, cutoff: float) -> None:
+        """Forget buckets whose every recorded hit is older than the window."""
+        stale = [key for key, hits in self._hits.items() if not hits or hits[-1] <= cutoff]
+        for key in stale:
+            del self._hits[key]
 
     def reset(self) -> None:
         """Forget all recorded hits (used by the test suite for isolation)."""

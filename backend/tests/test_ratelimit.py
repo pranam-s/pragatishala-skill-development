@@ -53,6 +53,19 @@ def test_limiter_keys_are_isolated() -> None:
     assert limiter.check("client-a", 1)[0]
 
 
+def test_limiter_sweeps_fully_expired_keys() -> None:
+    clock = _FakeClock()
+    limiter = SlidingWindowLimiter(clock=clock)
+    limiter.check("flood-1", 5)
+    limiter.check("flood-2", 5)
+    clock.now += 120.0  # every flood bucket is now entirely past the window
+    # A generous limit keeps the steady checks allowed (rejected checks return
+    # before the sweep counter) so the periodic sweep actually fires.
+    for _ in range(SlidingWindowLimiter._SWEEP_EVERY):
+        limiter.check("steady", 10**6)
+    assert set(limiter._hits) == {"steady"}
+
+
 def test_bucket_for_matches_exact_routes() -> None:
     assert bucket_for("POST", "/api/v1/auth/login") == AUTH_BUCKET
     assert bucket_for("POST", "/api/v1/auth/register") == AUTH_BUCKET
