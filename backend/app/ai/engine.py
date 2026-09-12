@@ -49,6 +49,12 @@ _LEVEL_WORDS: tuple[tuple[str, str], ...] = (
     ("learning", "beginner"),
 )
 _LEVEL_WORD_PATTERN = re.compile(rf"\b(?:{'|'.join(word for word, _level in _LEVEL_WORDS)})\b")
+_LEVEL_FOR_WORD: dict[str, str] = dict(_LEVEL_WORDS)
+# A level word stated before a comma list ("Expert in Python, SQL, and Java")
+# belongs to every sibling that carries no level evidence of its own; a
+# discourse marker between the word and a mention ("Advanced in SQL but Python
+# just starting") starts a new attribution and stops the sharing (AR3-003).
+_CLAUSE_BOUNDARY = re.compile(r"\b(?:but|however|then|though|although|yet)\b")
 _SENTENCE_BREAK = re.compile(r"[.!?;\n]")
 # Dots that are not sentence ends are blanked (in a same-length mask) before
 # sentence bounds are computed: abbreviation dots ("Expert in web
@@ -218,6 +224,23 @@ def _scope_bounds(
     return left, right
 
 
+def _shared_level_word(text: str, sentence_left: int, mention_start: int) -> str | None:
+    """Level word governing a list from before its first member, if any.
+
+    Reading backwards from the mention, the nearest level word in the sentence
+    is shared - unless a discourse marker sits between it and the mention, in
+    which case the word belongs to a separate attribution.
+    """
+    region = text[sentence_left:mention_start]
+    matches = list(_LEVEL_WORD_PATTERN.finditer(region))
+    if not matches:
+        return None
+    nearest = matches[-1]
+    if _CLAUSE_BOUNDARY.search(region[nearest.end() :]):
+        return None
+    return _LEVEL_FOR_WORD[nearest.group(0)]
+
+
 def _context_required(text: str, alias: str, start: int, end: int) -> bool:
     """False for lowercase "led": the claim needs no surrounding skill talk."""
     return alias != "led" or text[start:end].isupper()
@@ -259,6 +282,10 @@ def _score_mentions(text: str) -> dict[str, SkillScore]:
                 scope = lowered[scope_left:scope_right]
                 years = _years_for_scope(scope, start - scope_left)
                 level = _level_for(scope, hits, years)
+                if years is None and not _LEVEL_WORD_PATTERN.search(scope):
+                    shared = _shared_level_word(lowered, sentence_left, start)
+                    if shared is not None:
+                        level = shared
                 if _level_rank(level) > best_rank:
                     best_rank = _level_rank(level)
                     best_level = level

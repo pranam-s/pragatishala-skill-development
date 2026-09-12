@@ -468,10 +468,42 @@ def test_decimal_years_score_as_one_figure(phrase: str, expected: str) -> None:
 def test_abbreviation_dots_keep_level_words_in_scope(phrase: str) -> None:
     result = _rule_based_assessment(phrase, None)
     by_name = {skill.name: skill for skill in result.skills}
-    # The level word stays in the sentence; AR-029 clause binding ties it to
-    # the nearest mention (Python) instead of losing it to a bogus split.
+    # The abbreviation dots no longer split the sentence (AR2-004), and the
+    # level word is shared across the comma list (AR3-003): both skills read
+    # as expert instead of only the first-listed one.
     assert by_name["Python"].level == "expert"
-    assert by_name["SQL"].level == "beginner"
+    assert by_name["SQL"].level == "expert"
+
+
+# --- AR3-003: a clause's level word covers every sibling in its list ---
+
+
+@pytest.mark.parametrize(
+    ("phrase", "skill", "expected"),
+    [
+        ("Expert in Python, SQL, and Java.", "SQL", "expert"),
+        ("Expert in Python, SQL, and Java.", "Java", "expert"),
+        ("Advanced in SQL and Python.", "Python", "advanced"),
+    ],
+)
+def test_list_siblings_share_the_level_word(phrase: str, skill: str, expected: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    by_name = {s.name: s for s in result.skills}
+    assert by_name[skill].level == expected
+
+
+@pytest.mark.parametrize(
+    ("phrase", "skill"),
+    [
+        ("Advanced in SQL but Python just starting.", "Python"),
+        ("Expert in SQL. I also know Python.", "Python"),
+        ("Advanced in SQL, then Python came later.", "Python"),
+    ],
+)
+def test_level_word_sharing_stops_at_attribution_boundaries(phrase: str, skill: str) -> None:
+    result = _rule_based_assessment(phrase, None)
+    by_name = {s.name: s for s in result.skills}
+    assert by_name[skill].level == "beginner"
 
 
 # --- AR2-006: experience figures must not leak across domains in a clause ---
