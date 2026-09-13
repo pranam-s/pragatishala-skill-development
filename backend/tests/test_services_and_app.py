@@ -5,7 +5,7 @@ from pathlib import Path
 import app.security as security_module
 import httpx
 import pytest
-from app.ai.engine import RULE_BASED
+from app.ai.engine import RULE_BASED, SkillEngine
 from app.config import get_settings
 from app.database import get_session_factory
 from app.main import API_PREFIX, app, create_app
@@ -18,10 +18,27 @@ from app.services import (
     register_user,
 )
 from argon2 import PasswordHasher
+from fastapi import FastAPI
 
 from tests.conftest import TEST_SECRET, login_headers
 
 _FAST_HASHER = PasswordHasher(time_cost=1, memory_cost=8 * 1024, parallelism=1)
+
+
+def _fresh_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, debug: bool) -> FastAPI:
+    """Build an app under an explicit debug posture (import-time env cannot leak)."""
+    monkeypatch.setenv("PRAGATISHALA_JWT_SECRET_KEY", TEST_SECRET)
+    monkeypatch.setenv(
+        "PRAGATISHALA_DATABASE_URL", f"sqlite+aiosqlite:///{(tmp_path / 'fresh.db').as_posix()}"
+    )
+    if debug:
+        monkeypatch.setenv("PRAGATISHALA_DEBUG", "true")
+    else:
+        monkeypatch.delenv("PRAGATISHALA_DEBUG", raising=False)
+    try:
+        return create_app()
+    finally:
+        get_settings.cache_clear()
 
 
 async def test_register_user_duplicate_raises(client, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -68,28 +85,34 @@ def test_api_prefix() -> None:
     assert API_PREFIX == "/api/v1"
 
 
-async def test_healthz_reports_engine(client) -> None:
+async def test_healthz_reports_minimal_status_by_default(client) -> None:
+    """The unauthenticated probe discloses nothing beyond liveness (AR-027)."""
     response = await client.get("/healthz")
     assert response.status_code == 200
-    body = response.json()
+    assert response.json() == {"status": "ok"}
+
+
+async def test_healthz_diagnostics_opt_in_via_debug(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Debug mode opts the probe back into provider/version diagnostics (AR-027)."""
+    fresh = _fresh_app(tmp_path, monkeypatch, debug=True)
+    fresh.state.skill_engine = SkillEngine(None)
+    transport = httpx.ASGITransport(app=fresh)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as http:
+        body = (await http.get("/healthz")).json()
     assert body["status"] == "ok"
+    assert body["version"]
     assert body["ai_provider"] == RULE_BASED
-    assert body["debug"] == "false"
+    assert body["debug"] == "true"
 
 
 async def test_healthz_before_lifespan(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("PRAGATISHALA_JWT_SECRET_KEY", TEST_SECRET)
-    monkeypatch.setenv(
-        "PRAGATISHALA_DATABASE_URL", f"sqlite+aiosqlite:///{(tmp_path / 'fresh.db').as_posix()}"
-    )
-    get_settings.cache_clear()
-    try:
-        fresh = create_app()  # no lifespan run: engine not attached
-        transport = httpx.ASGITransport(app=fresh)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as http:
-            body = (await http.get("/healthz")).json()
-    finally:
-        get_settings.cache_clear()
+    fresh = _fresh_app(tmp_path, monkeypatch, debug=True)
+    # no lifespan run: engine not attached
+    transport = httpx.ASGITransport(app=fresh)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as http:
+        body = (await http.get("/healthz")).json()
     assert body["ai_provider"] == "uninitialized"
 
 
@@ -103,10 +126,30 @@ async def test_cors_blocks_unknown_origin(client) -> None:
     assert "access-control-allow-origin" not in response.headers
 
 
-async def test_openapi_schema_available(client) -> None:
-    response = await client.get("/api/openapi.json")
-    assert response.status_code == 200
-    paths = response.json()["paths"]
+async def test_api_docs_and_schema_hidden_by_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Swagger UI and the OpenAPI schema are 404 unless debug mode is on (AR-027)."""
+    fresh = _fresh_app(tmp_path, monkeypatch, debug=False)
+    transport = httpx.ASGITransport(app=fresh)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as http:
+        docs = await http.get("/api/docs")
+        schema = await http.get("/api/openapi.json")
+    assert docs.status_code == 404
+    assert schema.status_code == 404
+
+
+async def test_api_docs_and_schema_available_in_debug_mode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fresh = _fresh_app(tmp_path, monkeypatch, debug=True)
+    transport = httpx.ASGITransport(app=fresh)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as http:
+        docs = await http.get("/api/docs")
+        schema = await http.get("/api/openapi.json")
+    assert docs.status_code == 200
+    assert schema.status_code == 200
+    paths = schema.json()["paths"]
     assert f"{API_PREFIX}/auth/register" in paths
     assert f"{API_PREFIX}/events" in paths
 
@@ -129,10 +172,8 @@ def test_aware_normalizes_naive_datetimes() -> None:
 
 
 async def test_lifespan_configures_engine_and_tables(client) -> None:
-    from app.ai.engine import SkillEngine as _SkillEngine
-
     async with app.router.lifespan_context(app):
-        assert isinstance(app.state.skill_engine, _SkillEngine)
+        assert isinstance(app.state.skill_engine, SkillEngine)
         assert app.state.skill_engine.provider_name == RULE_BASED
 
 
@@ -146,7 +187,6 @@ async def test_market_cold_start_race_serves_winner_row(
     """
     from datetime import UTC, datetime
 
-    from app.ai.engine import SkillEngine
     from app.models import MarketReport
     from app.schemas import MarketInsights
     from app.services import get_market_insights
@@ -193,7 +233,6 @@ async def test_market_cold_start_race_serves_winner_row(
 
 async def test_market_refresh_bypasses_fresh_cache(client) -> None:
     """refresh=true must regenerate even when the cached row is within TTL (AR2-014)."""
-    from app.ai.engine import SkillEngine
     from app.services import get_market_insights
 
     factory = get_session_factory()

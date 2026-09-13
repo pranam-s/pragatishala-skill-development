@@ -52,6 +52,8 @@ class Settings(BaseSettings):
 
     app_name: str = "PragatiShala API"
     app_version: str = "0.1.0"
+    # Debug posture (default off): enables the verbose /healthz diagnostics
+    # and the unauthenticated /api/docs + /api/openapi.json surfaces (AR-027).
     debug: bool = False
 
     # --- Database ---

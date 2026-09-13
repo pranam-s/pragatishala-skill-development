@@ -42,6 +42,7 @@ async def _isolated_environment(
         "PRAGATISHALA_MARKET_CACHE_MINUTES",
         "PRAGATISHALA_SSE_KEEPALIVE_SECONDS",
         "PRAGATISHALA_AI_PROVIDER",
+        "PRAGATISHALA_DEBUG",
     ):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr(security_module, "_hasher", _FAST_HASHER)

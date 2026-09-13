@@ -40,7 +40,8 @@ Ordered by value per unit of risk. Items move to ADRs/PRD when they start.
 - Dockerfile + compose for one-command full-stack bring-up.
 - MySQL integration tests in CI (service container).
 - Production deployment guide (reverse proxy, TLS, SSE buffering caveats —
-  `X-Accel-Buffering: no` is already set). The guide should also own
-  production hardening of information exposure: `/healthz` currently reports
-  the active AI provider and debug flag, and `/api/docs` + openapi.json are
-  always public (AR-027).
+  `X-Accel-Buffering: no` is already set). Information exposure is already
+  hardened in code (AR-027, shipped 2026-09-14): `/healthz` returns only
+  `{"status":"ok"}` unless `PRAGATISHALA_DEBUG=true`, and `/api/docs` +
+  `/api/openapi.json` are served only in debug mode — the guide just needs
+  to say "never enable debug mode in production".

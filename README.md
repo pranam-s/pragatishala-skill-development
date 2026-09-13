@@ -59,7 +59,9 @@ cp .env.example .env                   # then set PRAGATISHALA_JWT_SECRET_KEY
 uv run uvicorn app.main:app --reload   # http://127.0.0.1:8000
 ```
 
-API docs: <http://127.0.0.1:8000/api/docs>
+API docs: <http://127.0.0.1:8000/api/docs> — served only when
+`PRAGATISHALA_DEBUG=true` (default off, AR-027); otherwise the Swagger UI and
+`/api/openapi.json` return 404.
 
 Generate a dev secret:
 
@@ -105,7 +107,7 @@ Keys are read from the environment only — never hardcoded, never committed.
 cd backend
 uv run ruff check app tests && uv run ruff format --check app tests
 uv run mypy                     # strict
-uv run pytest                   # 289 tests, ≥90% line + branch coverage enforced
+uv run pytest                   # 291 tests, ≥90% line + branch coverage enforced
 
 # Frontend
 cd frontend

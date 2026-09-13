@@ -2,6 +2,26 @@
 
 Honest, reverse-chronological log of significant work sessions.
 
+## 2026-09-14 — AR-027 information-exposure fix (quick win)
+
+- **Fix:** `/healthz` returned the active AI provider, app version, and debug
+  flag to unauthenticated callers, and `/api/docs` + `/api/openapi.json` were
+  always public (AR-027 from `docs/ADVERSARIAL-REVIEW.md`). Now `/healthz`
+  answers only `{"status":"ok"}` and the docs/schema endpoints 404, unless
+  `PRAGATISHALA_DEBUG=true` (default off) opts the operator back in —
+  `create_app` wires `docs_url`/`openapi_url` from that flag, and the healthz
+  handler branches on it per request.
+- **Tests:** posture tests for both surfaces in both postures — minimal
+  healthz by default, diagnostics opt-in, uninitialized-engine diagnostics,
+  docs/schema hidden by default, docs/schema available in debug. Backend:
+  291 tests (was 289), 99.37% line+branch coverage (was 99.36%).
+- **Docs synced:** README (API-docs note + counts), AGENTS.md, CHANGELOG,
+  `docs/limitations.md`, `docs/roadmap.md` (Ops row: exposure resolved; the
+  production guide only needs the "never enable debug in production" note,
+  added to `docs/deployment.md` §4), `backend/.env.example`.
+- Gates at close: pytest 291 passed (99.37% line+branch), ruff check/format
+  and mypy strict clean.
+
 ## 2026-09-13 — Publication re-pass at final HEAD (fourth pass, AR4)
 
 - **Hostile re-review at HEAD `1a66c49` with executed probes**, focused on the

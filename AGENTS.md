@@ -88,8 +88,12 @@ throughout development. Current-state detail lives in [README.md](README.md),
     (register → login → assessment → learning path → resume → market →
     refresh → SSE) verified over live HTTP and through the Vite dev proxy.
 *   **Backend:** FastAPI app factory (`app/main.py`), async SQLAlchemy
-    (SQLite dev / MySQL-ready), strict mypy, Ruff, 289 pytest tests with
-    99.36% line+branch coverage (≥90% enforced). See ADR 0001–0008.
+    (SQLite dev / MySQL-ready), strict mypy, Ruff, 291 pytest tests with
+    99.37% line+branch coverage (≥90% enforced). See ADR 0001–0008.
+*   **AR-027 fix (2026-09-14):** `/healthz` returns only `{"status":"ok"}`
+    by default (provider/version/debug diagnostics behind
+    `PRAGATISHALA_DEBUG`), and `/api/docs` + `/api/openapi.json` are served
+    only in debug mode.
 *   **Fourth pass / publication re-check (2026-09-13):** hostile re-review at
     final HEAD with executed probes; findings and explicitly empty review
     categories recorded in `docs/PUBLICATION-PASS.md`. Fixes: JWT subject

@@ -4,6 +4,22 @@ All notable changes to PragatiShala are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — 2026-09-14 (AR-027 information-exposure fix)
+
+### Fixed
+- Security: `/healthz` no longer discloses the active AI provider, app
+  version, or debug flag to unauthenticated callers — it returns only
+  `{"status":"ok"}` (AR-027). The diagnostics return behind
+  `PRAGATISHALA_DEBUG=true` (default off).
+- Security: `/api/docs` (Swagger UI) and `/api/openapi.json` are served only
+  when `PRAGATISHALA_DEBUG=true`; by default both return 404 instead of
+  enumerating every endpoint to anonymous callers (AR-027).
+
+### Testing
+- Backend: 291 tests (was 289), 99.37% line+branch coverage (was 99.36%).
+  New posture tests: healthz minimal-by-default, healthz diagnostics
+  opt-in, docs/schema hidden-by-default, docs/schema available-in-debug.
+
 ## [Unreleased] — 2026-09-13 (fourth pass, publication re-check)
 
 Hostile re-review of the AR2/AR3 remediation waves at final HEAD, with

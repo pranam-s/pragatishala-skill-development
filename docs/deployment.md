@@ -78,6 +78,11 @@ off;` is safe to add for the events location).
   Each purge triggers a billable LLM call: the per-IP generation limit is the
   outer bound on market LLM spend, and this budget is the per-account bound
   (AR3-006).
+- Leave `PRAGATISHALA_DEBUG` off (the default). Debug mode is the only thing
+  that enables the unauthenticated `/api/docs` + `/api/openapi.json` surfaces
+  and the verbose `/healthz` diagnostics (version, active AI provider); with
+  it off, `/healthz` answers just `{"status":"ok"}` and the docs endpoints
+  return 404 (AR-027).
 
 ## 5. Smoke test the deployment
 

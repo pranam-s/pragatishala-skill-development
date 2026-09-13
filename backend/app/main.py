@@ -53,8 +53,11 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version=__version__,
         lifespan=lifespan,
-        docs_url="/api/docs",
-        openapi_url="/api/openapi.json",
+        # Interactive docs and the OpenAPI schema are disabled unless debug
+        # mode is explicitly enabled (AR-027): they enumerate every endpoint
+        # and are served unauthenticated.
+        docs_url="/api/docs" if settings.debug else None,
+        openapi_url="/api/openapi.json" if settings.debug else None,
     )
     # Rate limiting sits inside CORS so 429 responses still carry CORS
     # headers and the SPA can surface the detail message.
