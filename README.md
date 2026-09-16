@@ -183,3 +183,7 @@ controls, focus loss) are release blockers.
 ## License
 
 [MIT](LICENSE)
+
+## CI note (2026-09-16)
+
+GitHub Actions is DISABLED on this repository by owner decision (no paid Actions: the account is billing-blocked and the owner declined spend). Every quality gate was verified by local execution at the recorded HEAD. Zero-cost remote option if ever wanted: a self-hosted runner (re-enable via Settings -> Actions, or gh api -X PUT repos/pranam-s/pragatishala-skill-development/actions/permissions -F enabled=true).
