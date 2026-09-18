@@ -4,7 +4,7 @@ All notable changes to PragatiShala are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased] — 2026-09-18 (production-completion pass)
+## [Unreleased] (2026-09-18)
 
 ### Changed
 - Dependencies refreshed to latest stable: backend `uv lock --upgrade`
@@ -21,9 +21,9 @@ versioning follows [Semantic Versioning](https://semver.org/).
   backend dev group (package/module name maps and justified DEP002
   exemptions documented in `pyproject.toml`), `knip.json` for the
   frontend. Both run clean.
-- docs/design.md — HLD + LLD overview layer with system and data-flow
+- docs/design.md: HLD + LLD overview layer with system and data-flow
   diagrams and the ADR index (architecture.md remains the deep reference).
-- docs/screenshots/ — seven screenshots captured from a real
+- docs/screenshots/: seven screenshots captured from a real
   register → login → assessment → learning-path run through the Vite dev
   proxy on 2026-09-18.
 
@@ -31,11 +31,11 @@ versioning follows [Semantic Versioning](https://semver.org/).
 - `@emotion/styled` (unused after the Chakra v3 migration) and the
   unused `ExperienceLevel` type alias.
 
-## [Unreleased] — 2026-09-14 (AR-027 information-exposure fix)
+## [Unreleased] (2026-09-14, AR-027 security fix)
 
 ### Fixed
 - Security: `/healthz` no longer discloses the active AI provider, app
-  version, or debug flag to unauthenticated callers — it returns only
+  version, or debug flag to unauthenticated callers; it returns only
   `{"status":"ok"}` (AR-027). The diagnostics return behind
   `PRAGATISHALA_DEBUG=true` (default off).
 - Security: `/api/docs` (Swagger UI) and `/api/openapi.json` are served only
@@ -47,7 +47,7 @@ versioning follows [Semantic Versioning](https://semver.org/).
   New posture tests: healthz minimal-by-default, healthz diagnostics
   opt-in, docs/schema hidden-by-default, docs/schema available-in-debug.
 
-## [Unreleased] — 2026-09-13 (fourth pass, publication re-check)
+## [Unreleased] (2026-09-13, publication re-check)
 
 Hostile re-review of the AR2/AR3 remediation waves at final HEAD, with
 executed probes; findings and explicitly empty categories in
@@ -78,7 +78,7 @@ executed probes; findings and explicitly empty categories in
 - Backend: 289 tests (was 278), 99.36% line+branch coverage held.
   Frontend unchanged: 37 Vitest tests, ESLint/tsc/build clean.
 
-## [Unreleased] — 2026-09-12 (third pass)
+## [Unreleased] (2026-09-12, AR3 remediation)
 
 Third adversarial pass remediation (findings AR3-001..AR3-011 from
 `docs/ADVERSARIAL-REVIEW-3.md`; resolution table appended to that review).
@@ -120,9 +120,9 @@ Third adversarial pass remediation (findings AR3-001..AR3-011 from
   deployment.md §5 (AR3-010). Backend: 278 tests, 99.36% line+branch
   coverage (AR3-011 included: "ASP.NET" detects as C#).
 
-## [Unreleased] — 2026-09-12
+## [Unreleased] (2026-09-12, AR2 remediation)
 
-Second adversarial pass remediation (findings AR2-001..AR2-015 from
+Adversarial review 2 remediation (findings AR2-001..AR2-015 from
 `docs/ADVERSARIAL-REVIEW-2.md`).
 
 ### Fixed
@@ -150,13 +150,13 @@ Second adversarial pass remediation (findings AR2-001..AR2-015 from
   database access, and the generating LLM model is persisted and returned as
   `model_used` (AR2-014).
 - `docs/deployment.md`: single-worker posture, real-IP forwarding, proxy-level
-  limits, SSE-safe buffering — the guidance ADR 0007 deferred to (AR2-009).
+  limits, SSE-safe buffering; the guidance ADR 0007 deferred to (AR2-009).
 
 ### Testing
 - e2e smoke now asserts a live SSE event with its sequence id, the second
   market call serving `cached=true`, tampered-refresh rejection, and a 429
   from an exhausted auth bucket. Refresh-token reuse *detection* remains
-  deferred (tokens are not yet revocable — limitations #2, ADR 0002)
+  deferred (tokens are not yet revocable; limitations #2, ADR 0002)
   (AR2-015).
 - Backend: 232 tests, 99.31% line+branch coverage. Frontend: 37 tests
   (unchanged; no frontend code touched).
@@ -167,10 +167,10 @@ Second adversarial pass remediation (findings AR2-001..AR2-015 from
   validator is a sanity floor, not a strength meter; #14 records the
   socket-peer trust posture (AR2-005/008/009).
 
-## [Unreleased] — 2026-09-12 (first pass)
+## [Unreleased] (2026-09-12, AR1 remediation and finalization)
 
-Adversarial-review remediation pass (findings AR-001..AR-032 from
-`docs/ADVERSARIAL-REVIEW.md`) plus the publication finalization pass
+Adversarial-review remediation (findings AR-001..AR-032 from
+`docs/ADVERSARIAL-REVIEW.md`) plus the publication finalization items
 (AR-033, AR-034).
 
 ### Security
@@ -193,13 +193,13 @@ Adversarial-review remediation pass (findings AR-001..AR-032 from
   identical profile without it; it now counts recommended skills actually
   covered, capped at +10 (AR-033).
 - Rule-based engine: proficiency evidence (level words, year figures) binds
-  only to the skill mentioned in the same sentence - the old ±30-char window
+  only to the skill mentioned in the same sentence; the old ±30-char window
   leaked attributes across skills (AR-029).
 - Ambiguous aliases ("go", "led", "c") only match with skill context, so
   "ready to go", "LED lights", and "grade A B C" no longer invent skills
   (AR-030).
-- `/profile` restored to the RouteTitle map - screen-reader page context
-  (AR-008).
+- `/profile` restored to the RouteTitle map, restoring screen-reader page
+  context (AR-008).
 - Market cache cold-start race returns the winner's row instead of a 500
   (AR-028).
 - Frontend: native minLength validation active (noValidate removed) and
@@ -227,7 +227,7 @@ Adversarial-review remediation pass (findings AR-001..AR-032 from
 - Finalization refresh: @chakra-ui/react 3.29 → 3.37, react/react-dom 19.2 →
   19.3, @types/react* 19.3, @types/node 24.13; backend `uv lock --upgrade`
   re-verified current. TypeScript stays ^6.0.3 (typescript-eslint 8.70.0
-  peer-caps typescript <6.1.0 — re-checked against the live registry)
+  peer-caps typescript <6.1.0, re-checked against the live registry)
   (AR-034).
 
 ### Testing
@@ -248,7 +248,7 @@ Adversarial-review remediation pass (findings AR-001..AR-032 from
   synced; ADR 0006 and ADR 0007 added (AR-014, AR-015, AR-027, AR-024
   remain documented trade-offs tracked in the roadmap).
 
-## [0.1.0] — 2026-09-11
+## [0.1.0] (2026-09-11)
 
 First working end-to-end release: full backend, wired frontend, quality gates.
 

@@ -15,8 +15,7 @@ Last updated: 2026-09-14.
   record `engine_used`. Provider clients handle fenced JSON, bad bodies, HTTP
   errors, and schema-invalid output with tests for each.
 - **Accessibility.** All interactive flows are labelled, keyboard-operable, and
-  announce errors via `role="alert"`; the primary user is an NVDA user and the
-  author treats a11y regressions as release blockers.
+  announce errors via `role="alert"`; a11y regressions are release blockers.
 
 ## Known limitations
 
@@ -53,7 +52,7 @@ Last updated: 2026-09-14.
    constructions are hard-vetoed near a homograph (the "go" infinitive, "the
    swift development of …", article usage before "node", hyphen compounds
    like "go-to"), and "cv"/"lambda" additionally require domain cues nearby
-   (vision terms; aws/serverless) — which costs legitimate phrasings such as
+   (vision terms; aws/serverless); this costs legitimate phrasings such as
    "Go-based services" or an unqualified "I write lambdas"
    (AR3-004). `engine_used`
    tells you when you are reading its output.
@@ -75,7 +74,7 @@ Last updated: 2026-09-14.
    figures. No job-board integrations yet.
 10. **Frontend coverage focuses on logic.** The API client, auth context, and
    page behaviour are tested (37 tests); Navbar/Footer/route table are UI glue
-   deliberately left unmeasured — they contain no logic beyond markup. The
+   deliberately left unmeasured; they contain no logic beyond markup. The
    ≥90% rule is enforced on the backend `app` package; frontend coverage is
    reported but not gated, with this justification.
 11. **No browser-level e2e (Playwright) yet.** Backend e2e runs over real HTTP

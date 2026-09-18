@@ -1,27 +1,27 @@
-# Adversarial Review — pragatishala-skill-development
+# Adversarial review: pragatishala-skill-development
 
 > **Remediation status (2026-09-12):** findings AR-001…AR-004, AR-006…AR-023,
 > AR-025…AR-026, AR-028…AR-032 are fixed; AR-005's same-major drift was
 > cleared by `npm audit fix` + toolchain refresh; AR-007 fixed. Remaining
 > open items (deliberate, tracked):
-> - **AR-024** — logout is client-side, no revocation: documented trade-off
+> - **AR-024**: logout is client-side, no revocation: documented trade-off
 >   (ADR 0002); rotation/revocation stays Phase-3 roadmap security work.
-> - **AR-027** — `/healthz` + `/api/docs` exposure: production-guide item,
+> - **AR-027**: `/healthz` + `/api/docs` exposure: production-guide item,
 >   noted in roadmap Ops.
-> - **AR-031 (mutation testing)** — hypothesis properties shipped; mutmut
+> - **AR-031 (mutation testing)**: hypothesis properties shipped; mutmut
 >   needs Linux/WSL (fork support), wired as CI follow-up (README, roadmap).
 >
 > See CHANGELOG "Unreleased" for the full change list.
 
-- **Reviewer:** independent adversarial review pass (ZCode agent)
+- **Reviewer:** independent adversarial review
 - **Date:** 2026-09-11 (IST)
 - **Commit reviewed:** `a46f9be` (tree clean at review start)
 - **Scope:** backend (FastAPI, Python 3.13, uv), frontend (React 19 + Chakra v3), docs, tests, CI
-- **Method:** full read of tracked sources; suspected bugs verified with targeted runs (`uv run pytest`, in-process ASGI probes, rule-engine probes) — all findings carry evidence; dependencies checked against live PyPI/npm registries and GitHub Actions releases on 2026-09-11. Findings only — nothing was fixed.
+- **Method:** full read of tracked sources; suspected bugs verified with targeted runs (`uv run pytest`, in-process ASGI probes, rule-engine probes): all findings carry evidence; dependencies checked against live PyPI/npm registries and GitHub Actions releases on 2026-09-11. Findings only: nothing was fixed.
 
 ---
 
-## Pass 1 — Dependency audit (live registries, checked 2026-09-11 ~23:30 IST)
+## Pass 1: dependency audit (live registries, checked 2026-09-11 ~23:30 IST)
 
 Backend pyproject floors vs PyPI latest (`pypi.org/pypi/<pkg>/json`, `info.version`):
 all 10 runtime deps and all 5 dev deps are at or admit the current latest
@@ -37,12 +37,12 @@ concentrates: several majors behind, one unused dependency, and one tilde-pin.
 
 - **AR-001 (P3, deps-backend):** `uv.lock` pins `ruff 0.16.6` (latest 0.16.7)
   and `pyjwt 2.13.0` (2.14.0 was released 2026-09-11, one day after the lock
-  was generated on 2026-09-10). Not a pinning violation — floors admit both —
+  was generated on 2026-09-10). Not a pinning violation (floors admit both),
   but `uv lock --upgrade` should be run before the next commit.
 - **AR-002 (P2, deps-frontend):** `framer-motion` is a direct dependency
   (`package.json` ^12.23.24, lock 12.23.24) but **zero imports exist anywhere
   in `frontend/src`**; latest is 13.2.0 (a major behind as well). Chakra UI v3
-  does not require framer-motion. Dead dependency — remove it.
+  does not require framer-motion. Dead dependency: remove it.
 - **AR-003 (P2, deps-frontend):** `typescript` is the only tilde-pinned
   version in the manifest (`~5.9.3`, lock 5.9.3); npm latest is **7.0.2**.
   Two majors behind plus a hand-pin that blocks even minor updates. Either
@@ -60,17 +60,17 @@ concentrates: several majors behind, one unused dependency, and one tilde-pin.
 - **AR-006 (P3, ci):** GitHub Actions pinned to old majors:
   `actions/checkout@v4` (latest v7.0.1), `actions/setup-node@v4` (latest
   v7.0.0), `astral-sh/setup-uv@v5` (latest v10.1.0). No dependabot/renovate
-  config exists to keep actions or npm deps current — a likely reason the
+  config exists to keep actions or npm deps current: a likely reason the
   drift in AR-002…AR-005 accumulated.
 - **AR-007 (P3, ci):** `ci.yml` uses `node-version: 22` while the project
-  pins `@types/node` ^24 (lock 24.10.0) — type definitions for a newer Node
+  pins `@types/node` ^24 (lock 24.10.0): type definitions for a newer Node
   major than the CI runtime. Align both (Node 24 is LTS as of 2026).
 
 ---
 
-## Pass 2 — Documentation drift and code health (static)
+## Pass 2: documentation drift and code health (static)
 
-- **AR-008 (P2, a11y/code):** `frontend/src/components/RouteTitle.tsx` — the
+- **AR-008 (P2, a11y/code):** `frontend/src/components/RouteTitle.tsx`: the
   `TITLES` map has no `"/profile"` entry, so the Profile page falls back to
   the generic title "PragatiShala". `/profile` was added in the latest commit
   (a46f9be) without updating the map. This is exactly the page-context cue
@@ -82,41 +82,41 @@ concentrates: several majors behind, one unused dependency, and one tilde-pin.
   sync with the backend `Literal` in `app/schemas.py`. Extract to a shared
   module (and consider generating from the OpenAPI schema).
 - **AR-010 (P3, logic-UX):** `SkillAssessment.tsx` sets both
-  `minLength={MIN_LENGTH}` on the Textarea **and** `noValidate` on the form —
+  `minLength={MIN_LENGTH}` on the Textarea **and** `noValidate` on the form;
   `noValidate` disables the native constraint, so the declared minimum never
   fires client-side; every too-short submit makes a pointless round trip and
   surfaces a raw 422 message. Either drop `noValidate` or do explicit
   client-side validation.
 - **AR-011 (P3, correctness-frontend):** `LearningPath.tsx` uses
-  `key={module.title}` — the AI provider path can legitimately return two
+  `key={module.title}`: the AI provider path can legitimately return two
   modules with the same title, producing duplicate React keys and mis-rendered
   list items. Use the index-stable id (e.g. `key={`${index}-${module.title}`}`)
   or require unique titles in the schema.
 - **AR-012 (P3, dead-code):** `backend/main.py` is a tracked 5-line re-export
   whose only purpose is supporting `uvicorn main:app`; `app.main:app` is the
-  documented entrypoint. YAGNI — remove the module (and the mention in the
+  documented entrypoint. YAGNI: remove the module (and the mention in the
   `app/main.py` docstring) or justify it in the architecture doc.
 - **AR-013 (P3, dead-code):** `EventBus.subscriber_count()` is used only by
-  tests (its own docstring says so) — production code living for tests.
+  tests (its own docstring says so): production code living for tests.
   Assert against `bus._subscribers` in tests or drop the method.
 - **AR-014 (P3, doc-drift):** `docs/limitations.md` #9 says frontend has
   "**31 tests**" and `AGENTS.md` says "**31 Vitest tests**"; README and
   reality say **36** (verified: 36 `it(`/`test(` blocks, vitest collects 36).
   Commit d06e4a8 updated some docs but missed these two.
 - **AR-015 (P3, doc-drift):** `docs/architecture.md` "Routing" lists
-  authenticated routes as `/assessment`, `/learning-path` — `/profile` is
+  authenticated routes as `/assessment`, `/learning-path`: `/profile` is
   missing (same commit-blind spot as AR-008).
 - **AR-016 (P3, doc-drift):** `app/events.py` module docstring claims events
-  are published "when long-running AI work **starts and finishes**" — services
+  are published "when long-running AI work **starts and finishes**": services
   publish only completion events; no start events exist.
 - **AR-017 (P3, YAGNI):** `Assessment.status` and `LearningPath.status` are
   always written `"completed"` and never transition; `Resume` has no status at
   all. Either implement the state machine or drop the columns.
 - **AR-018 (P3, robustness):** `services.update_resume` manually sets
   `resume.updated_at = datetime.now(UTC)` although the column already has
-  `onupdate=utcnow` — redundant dual mechanism that can drift.
+  `onupdate=utcnow`: redundant dual mechanism that can drift.
 - **AR-019 (P3, script-hygiene):** `scripts/e2e_smoke.sh` line 23 is dead
-  (`curl ... "/../healthz" ... || true` — the result is discarded and the next
+  (`curl ... "/../healthz" ... || true`: the result is discarded and the next
   line re-checks healthz properly), and the candidate-path loop contains
   stray multiple spaces. Also: the script never exercises SSE, ownership
   boundaries, or resume PATCH, while `docs/limitations.md` claims the full
@@ -131,17 +131,17 @@ concentrates: several majors behind, one unused dependency, and one tilde-pin.
 
 ---
 
-## Pass 3 — Security (verified with live runs against the ASGI app)
+## Pass 3: security (verified with live runs against the ASGI app)
 
 Verification script (in-process httpx + ASGITransport, throwaway temp SQLite):
 
 | Probe | Result |
 |---|---|
-| `GET /api/v1/events` without token | **401** — SSE requires auth (good) |
-| Refresh token presented as access bearer | **401** — type confusion rejected (good) |
+| `GET /api/v1/events` without token | **401**: SSE requires auth (good) |
+| Refresh token presented as access bearer | **401**: type confusion rejected (good) |
 | Garbage bearer | **401** (good) |
-| `POST /auth/refresh` after the user row was deleted | **200 — mints a fresh pair for a deleted user** (AR-022) |
-| That minted access token on `/users/me` | 401 (blast radius contained — access checks the DB) |
+| `POST /auth/refresh` after the user row was deleted | **200, mints a fresh pair for a deleted user** (AR-022) |
+| That minted access token on `/users/me` | 401 (blast radius contained: access checks the DB) |
 | `Settings(jwt_secret_key=".env.example placeholder")` | **Accepted** (AR-021) |
 
 Also verified good: CORS is an explicit allow-list (no wildcard) with
@@ -158,13 +158,13 @@ against timing enumeration; password hashing is Argon2id with library defaults.
   The placeholder committed in `backend/.env.example`
   (`change-me-at-least-32-bytes-long`, 33 bytes) passes the validator
   (verified by direct construction). A developer who copies the example
-  without editing — the exact workflow the README documents (`cp .env.example
-  .env`) — deploys with a publicly-known signing key: any outsider can mint
+  without editing (the exact workflow the README documents, `cp .env.example
+  .env`) deploys with a publicly-known signing key: any outsider can mint
   valid access/refresh JWTs for any user id. No startup warning is emitted
   for known placeholder values. Fix: reject a denylist of placeholder
   literals in the validator and/or warn at startup.
 - **AR-022 (P3, security-auth):** `/auth/refresh` never checks that the
-  subject still exists — verified above: it happily re-mints for a deleted
+  subject still exists; verified above, it happily re-mints for a deleted
   user for the full 7-day window. Same handler does `int(subject)` unguarded
   (a validly-signed non-numeric `sub` yields an unhandled 500). Fix: resolve
   the user in the refresh service (it currently has no DB dependency at all)
@@ -172,9 +172,9 @@ against timing enumeration; password hashing is Argon2id with library defaults.
 - **AR-023 (P2, security-rate):** No rate limiting or account-lockout on
   `/auth/login`, `/auth/register`, `/auth/refresh`; nothing throttles
   `/assessments`/`/resumes/generate` either, which with a provider key
-  configured converts into an open tap on the owner's LLM budget. Documented
+  configured converts into an open tap on the operator's LLM budget. Documented
   in limitations #4 and roadmap (so not a surprise), but it is the largest
-  open door on a platform holding student PII — severity P2 until it ships.
+  open door on a platform holding student PII: severity P2 until it ships.
 - **AR-024 (P3, security-auth):** Logout is purely client-side
   (`clearTokens()`); combined with no server-side revocation (documented ADR
   0002 / limitations #2) a "logged out" session's refresh token remains valid
@@ -189,8 +189,8 @@ against timing enumeration; password hashing is Argon2id with library defaults.
 - **AR-026 (P3, security-ai):** Prompt injection is unmitigated: user
   narrative, target role, and resume text are interpolated verbatim into the
   user message and the system prompt's "STRICT JSON only" is the only
-  defence. Blast radius is bounded — output is schema-validated and rendered
-  only back to the injecting user — and, importantly, the **shared** market
+  defence. Blast radius is bounded (output is schema-validated and rendered
+  only back to the injecting user) and, importantly, the **shared** market
   cache is safe: its prompt contains only the canonical profile title, never
   user text (verified by reading `SkillEngine.market_insights`). Fix
   direction: delimit/escape user text, add an injection-resistance note to
@@ -208,24 +208,24 @@ against timing enumeration; password hashing is Argon2id with library defaults.
 
 ---
 
-## Pass 4 — Logic / semantic (verified with live runs against the rule engine)
+## Pass 4: logic / semantic (verified with live runs against the rule engine)
 
 | Probe | Result |
 |---|---|
-| `"I do advanced Python. Also SQL."` | **SQL = advanced** (level word leaked from Python, 30 chars away) — AR-029 |
-| `"After 4 years of SQL, I touched Python yesterday."` | **Python = advanced** (`4 years` leaked from the SQL clause) — AR-029 |
+| `"I do advanced Python. Also SQL."` | **SQL = advanced** (level word leaked from Python, 30 chars away); AR-029 |
+| `"After 4 years of SQL, I touched Python yesterday."` | **Python = advanced** (`4 years` leaked from the SQL clause); AR-029 |
 | Isolated controls (`"I do advanced Python."`) | correct levels (the window is the only culprit) |
-| `"We are ready to go. I also fix LED lights…"` | **Go = beginner, Leadership = beginner** — AR-030 |
-| `"…grade A B C."` | **C (programming) = beginner** — AR-030 |
+| `"We are ready to go. I also fix LED lights…"` | **Go = beginner, Leadership = beginner**; AR-030 |
+| `"…grade A B C."` | **C (programming) = beginner**; AR-030 |
 | `"I am an expert in Python with 6 years…"` | expert (correct) |
 | Learning path from an all-skills assessment | sane module list, readiness 85 |
 
-Also verified good: the market cache TTL is a pure report cache — there are no
+Also verified good: the market cache TTL is a pure report cache: there are no
 updates that could go stale mid-TTL, the cached response's `refreshed_at` is
 the original refresh time, roles are normalized before lookup, and the LLM
 path re-writes `content`/`refreshed_at`/`engine_used` atomically (aside from
 AR-028's first-write race). `CHANGELOG.md` confirms the ±30-char window was
-itself the fix for a prior whole-text level leak — the fix is incomplete
+itself the fix for a prior whole-text level leak: the fix is incomplete
 (AR-029).
 
 ### Findings added this pass
@@ -242,13 +242,13 @@ itself the fix for a prior whole-text level leak — the fix is incomplete
   aliases "go" and "led" and the single-letter skill "C" match ordinary
   English/enumerations (verified above); unqualified claims ("I know Python")
   default to beginner. `docs/limitations.md` #5 claims the engine "will miss
-  unusual phrasings" — it also **invents** skills it was never told about;
+  unusual phrasings": it also **invents** skills it was never told about;
   the honest-limitations doc mischaracterizes the failure mode, which matters
   because `engine_used=rule_based` is the only disclosure.
 
 ---
 
-## Pass 5 — Test adequacy
+## Pass 5: test adequacy
 
 - Backend suite re-run during this review: **146 passed in ~12.5s, 98.91%
   line+branch coverage** (`--cov-branch --cov-fail-under=90`), ruff
@@ -276,7 +276,7 @@ itself the fix for a prior whole-text level leak — the fix is incomplete
 ### Findings added this pass
 
 - **AR-031 (P2, testing):** No property-based testing anywhere (`hypothesis`
-  is absent from the project), despite the owner's bar requiring it for
+  is absent from the project), despite the project's stated bar requiring it for
   backend invariants. Cheap high-value properties exist: token round-trips
   (`decode(create(x)) == x` for arbitrary subjects, TTLs, both token types),
   readiness score bounds 0–100 for arbitrary narratives, rule-engine
@@ -306,7 +306,7 @@ itself the fix for a prior whole-text level leak — the fix is incomplete
 | AR-008 | P2 | a11y | frontend/src/components/RouteTitle.tsx:4-10 | TITLES lacks "/profile": profile page title falls back to generic; breaks the page-context cue for screen readers (a11y regressions are release blockers per project docs) | Add `"/profile": "Profile"` |
 | AR-009 | P3 | DRY | frontend/src/components/RegistrationPage.tsx:7-13; ProfilePage.tsx:15-21 | EXPERIENCE_LEVELS duplicated verbatim; must be manually synced with backend Literal (schemas.py:20) | Extract shared module; consider OpenAPI codegen |
 | AR-010 | P3 | logic-UX | frontend/src/components/SkillAssessment.tsx:69,76 | `noValidate` disables the declared minLength; too-short submits round-trip a 422 instead of client-side validation | Drop noValidate or validate before submit |
-| AR-011 | P3 | correctness | frontend/src/components/LearningPath.tsx:93 | `key={module.title}` — AI output may contain duplicate titles → duplicate React keys | Index-composite key or schema-unique titles |
+| AR-011 | P3 | correctness | frontend/src/components/LearningPath.tsx:93 | `key={module.title}`: AI output may contain duplicate titles → duplicate React keys | Index-composite key or schema-unique titles |
 | AR-012 | P3 | dead-code | backend/main.py | 5-line re-export entrypoint duplicating app.main:app | Remove module + docstring mention |
 | AR-013 | P3 | dead-code | backend/app/events.py:55-57 | subscriber_count() used only by tests (docstring admits it) | Drop it; assert on internals in tests |
 | AR-014 | P3 | doc-drift | docs/limitations.md:48; AGENTS.md:92 | "31 tests" vs actual 36 (verified) | Update both |
@@ -319,14 +319,14 @@ itself the fix for a prior whole-text level leak — the fix is incomplete
 | AR-021 | P2 | security-secrets | backend/app/config.py:63-70; backend/.env.example:6 | Weak-secret guard is length-only; the committed example value (33 bytes) passes verification → `cp .env.example .env` yields a publicly-known JWT signing key with no warning | Reject placeholder denylist in validator; startup warning |
 | AR-022 | P3 | security-auth | backend/app/routers/auth.py:62-72 | /auth/refresh mints tokens for deleted users (verified); unguarded `int(subject)` can 500 | Resolve user in refresh; guard conversion |
 | AR-023 | P2 | security-rate | backend/app/routers/auth.py (absence), routers/* | No rate limiting/lockout on login/register/refresh; /assessments + /resumes/generate unthrottled = open LLM-budget tap. Documented but open on a student-PII platform | slowapi or proxy limits + per-user quotas |
-| AR-024 | P3 | security-auth | frontend/src/auth/AuthContext.tsx:87-90; docs/adr/0002 | Logout is client-side only; no revocation; localStorage tokens XSS-readable — documented trade-off, still open for student data | Treat roadmap security items as pre-launch work |
+| AR-024 | P3 | security-auth | frontend/src/auth/AuthContext.tsx:87-90; docs/adr/0002 | Logout is client-side only; no revocation; localStorage tokens XSS-readable: documented trade-off, still open for student data | Treat roadmap security items as pre-launch work |
 | AR-025 | P3 | security-jwt | backend/app/config.py:38; backend/app/security.py:88-92 | jwt_algorithm free-text env (accepts "none"); no iss/aud validation | Literal[HS256/384/512]; add iss/aud |
 | AR-026 | P3 | security-ai | backend/app/ai/engine.py:689,742-748 | User text interpolated verbatim into LLM prompts; only defence is "STRICT JSON" instruction. Bounded impact (schema-validated, self-visible); market cache path uses canonical titles only (safe, verified) | Delimit/escape user text; note residual risk in limitations |
 | AR-027 | P3 | security-info | backend/app/routers/health.py:12-22; backend/app/main.py:42-43 | /healthz publicly reports provider + debug flag; /api/docs + openapi.json always public | Gate/docs note for production guide |
 | AR-028 | P3 | security-availability | backend/app/services.py:345-353 | Cold-cache race: concurrent first requests double-INSERT MarketReport → IntegrityError 500; no concurrency tests exist | Catch IntegrityError + re-read, or upsert |
 | AR-029 | P2 | logic-engine | backend/app/ai/engine.py:88-94 | ±30-char window leaks level words AND year figures across skills (verified: "…advanced Python. Also SQL." → SQL=advanced; "4 years of SQL…Python" → Python=advanced); corrupts readiness + paths | Segment per mention; directional anchored regex |
-| AR-030 | P3 | logic-engine | backend/app/ai/skills_data.py:87,30 + engine alias scan | FP vocabulary: "ready to go"→Go, "LED"→Leadership, "grade A B C"→C (verified); limitations #5 admits only false negatives — mischaracterized | Word-boundary+context rules; document FP mode honestly |
-| AR-031 | P2 | testing | backend/pyproject.toml:18-25 (absence) | No property-based tests (hypothesis absent) and no mutation testing despite owner bar; feasible: 1,046 stmts, 12.5s suite → mutmut well under an hour | Add hypothesis invariants (token round-trip, score bounds, engine purity); add mutmut run to docs/CI |
+| AR-030 | P3 | logic-engine | backend/app/ai/skills_data.py:87,30 + engine alias scan | FP vocabulary: "ready to go"→Go, "LED"→Leadership, "grade A B C"→C (verified); limitations #5 admits only false negatives: mischaracterized | Word-boundary+context rules; document FP mode honestly |
+| AR-031 | P2 | testing | backend/pyproject.toml:18-25 (absence) | No property-based tests (hypothesis absent) and no mutation testing despite the project bar; feasible: 1,046 stmts, 12.5s suite → mutmut well under an hour | Add hypothesis invariants (token round-trip, score bounds, engine purity); add mutmut run to docs/CI |
 | AR-032 | P3 | testing | backend/tests (absence) | Untested error paths: deleted-user refresh, market-cache race, provider timeout exception, SSE disconnect cleanup, unauthenticated SSE 401 | Add the five named tests |
 
 ## Verified good (complete list)
@@ -337,7 +337,7 @@ itself the fix for a prior whole-text level leak — the fix is incomplete
 2. **Frontend core test stack current**: vitest 5.0.0, jsdom 30.0.1,
    @testing-library/react 16.3.3 / user-event 14.6.7 / jest-dom 7.0.1 /
    dom 10.4.1, @emotion/react 11.14.0 / styled 11.14.1,
-   @vitest/coverage-v8 5.0.0 — all npm latest.
+   @vitest/coverage-v8 5.0.0: all npm latest.
 3. **Test counts honest**: 146 backend (re-run: pass, 98.91% coverage with
    branch coverage on), 36 frontend (re-run: pass). README numbers correct.
 4. **Quality gates genuinely enforced**: ruff check/format clean, mypy
@@ -350,16 +350,16 @@ itself the fix for a prior whole-text level leak — the fix is incomplete
 7. **Ownership enforced in services on every read/update** (assessments,
    learning paths, resumes) and tested cross-user; `assessment_id` for path
    generation is ownership-checked too.
-8. **No SQL injection surface** — ORM-only, no raw SQL; no string-built
+8. **No SQL injection surface**: ORM-only, no raw SQL; no string-built
    queries.
-9. **No mass assignment** — update schemas enumerate fields;
+9. **No mass assignment**: update schemas enumerate fields;
    `apply_profile_update` cannot touch email/password.
 10. **CORS** explicit allow-list, no wildcard origin.
 11. **Timing-safe-ish login**: dummy Argon2 verify on unknown email; Argon2id
     defaults; secrets from env only; `.env` git-ignored with `.env.example`
     committed.
 12. **Market LLM prompt contains no user-controlled text** (canonical profile
-    title only) — shared cache is not injectable; schema bounds the enum
+    title only): shared cache is not injectable; schema bounds the enum
     fields of cached content.
 13. **Offline fallback contract** (`engine_used` recorded, fallback computed
     before provider call, all four features) is real and tested.
@@ -367,7 +367,7 @@ itself the fix for a prior whole-text level leak — the fix is incomplete
     events, error preservation of drafts), doubling as accessibility checks.
 15. **The `concurrency = ["greenlet"]` coverage fix** is correct and
     documented; the coverage number it enables is honestly reported.
-16. **Docs are unusually honest** — limitations list covers revocation,
+16. **Docs are unusually honest**: limitations list covers revocation,
     localStorage, rate limiting, SSE single-process, no-Alembic, no-Playwright,
     MySQL-untested; ADRs 0001–0005 match the code (Biome-vs-ESLint deviation
     is justified in the style guide).
@@ -377,22 +377,22 @@ itself the fix for a prior whole-text level leak — the fix is incomplete
 
 ## Executive summary
 
-**Verdict: solid, honest MVP with a disciplined test culture — but not yet
+**Verdict: solid, honest MVP with a disciplined test culture, but not yet
 shippable to real students without closing AR-021/AR-023 (secrets, rate
 limiting) and re-scoping the rule engine's failure modes.**
 
 | Severity | Count | IDs |
 |---|---|---|
-| P0 | 0 | — |
-| P1 | 0 | — |
+| P0 | 0 | none |
+| P1 | 0 | none |
 | P2 | 8 | AR-002, AR-003, AR-004, AR-008, AR-021, AR-023, AR-029, AR-031 |
 | P3 | 24 | AR-001, AR-005…AR-007, AR-009…AR-020, AR-022, AR-024…AR-028, AR-030, AR-032 |
 
-- **Total: 32 findings (0 P0, 0 P1, 8 P2, 24 P3)** — every finding has
+- **Total: 32 findings (0 P0, 0 P1, 8 P2, 24 P3)**: every finding has
   file:line evidence; the security and engine findings were reproduced with
   live runs, not conjecture.
 - **Security first**: the highest-leverage fix is AR-021 (placeholder secret
-  passes the validator) — one denylist check. AR-023 (no throttling) is next.
+  passes the validator): one denylist check. AR-023 (no throttling) is next.
   Everything else security-related that the code controls (SSE auth, token
   typing, ownership, CORS, SQL, mass assignment) checks out under adversarial
   probing.
@@ -401,19 +401,19 @@ limiting) and re-scoping the rule engine's failure modes.**
   toolchains, a tilde-pinned TypeScript 5.9 vs latest 7.0.2) with no
   dependabot/renovate to stop recurrence (AR-006).
 - **Correctness**: the ±30-char window (AR-029) demonstrably assigns other
-  skills' years/level-words and invents skills (AR-030) — for an assessment
+  skills' years/level-words and invents skills (AR-030): for an assessment
   product this is the most user-visible correctness debt, and the
   limitations doc should say so.
 - **Testing**: strong conventional coverage (98.91% with branch, behaviour-driven
-  frontend tests), but no property-based or mutation testing yet (AR-031) —
-  both are cheap here given the 12.5s suite — and a handful of named
+  frontend tests), but no property-based or mutation testing yet (AR-031);
+  both are cheap here given the 12.5s suite, and a handful of named
   error paths are untested (AR-032).
 - **Process**: 3 doc-drift items (AR-014, AR-015, AR-016) trace to the last
   commit adding the profile page without sweeping the docs; a post-feature
   doc grep (`RouteTitle`, architecture routing, test counts) would have caught
   all three.
 
-## Publication finalization pass (2026-09-12)
+## Publication finalization (2026-09-12)
 
 A hostile re-read of the remediated codebase plus dependency/docs verification
 found two new items; both are fixed and this section is their record.

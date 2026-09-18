@@ -1,4 +1,4 @@
-# ADR 0007 — In-process sliding-window rate limiting
+# ADR 0007: In-process sliding-window rate limiting
 
 Status: accepted
 
@@ -9,11 +9,11 @@ throttling, enabling unlimited password guessing and account enumeration.
 The LLM-billed endpoints (`POST /assessments`, `POST /learning-paths/generate`,
 `POST /resumes/generate`, `GET /market/insights` on a cold cache) were
 unthrottled too: with a provider key configured, scripted access converted
-into an open tap on the owner's LLM budget (adversarial review AR-023).
+into an open tap on the operator's LLM budget (adversarial review AR-023).
 
 FastAPI has no official rate-limiting story; `slowapi` (0.1.10) is a thin
 wrapper adding a dependency for what is ~80 lines here. The platform is
-explicitly single-process (SSE bus, in-memory state — see ADR 0004 and
+explicitly single-process (SSE bus, in-memory state; see ADR 0004 and
 limitations), so distributed coordination is not currently needed.
 
 ## Decision
@@ -21,8 +21,8 @@ limitations), so distributed coordination is not currently needed.
 A dependency-free, pure-ASGI middleware (`app/ratelimit.py`) enforces a
 sliding-window limit per client host and per bucket:
 
-- **auth bucket** — login, register, refresh; default 10 requests/minute.
-- **generation bucket** — the four LLM-billed routes above; default
+- **auth bucket**: login, register, refresh; default 10 requests/minute.
+- **generation bucket**: the four LLM-billed routes above; default
   15 requests/minute (exact routes only; list/read paths stay unthrottled).
 
 Properties:
@@ -52,5 +52,5 @@ Properties:
 - Per-IP keying means many legitimate students behind one NAT share a
   bucket; defaults (10 auth/min) are set well above interactive use.
 - In-memory state: limits reset on restart. That is acceptable for
-  brute-force slowdown and budget protection, not for auditing — token
+  brute-force slowdown and budget protection, not for auditing; token
   revocation/lockout remains roadmap security work (see ADR 0002).

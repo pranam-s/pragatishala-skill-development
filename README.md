@@ -1,4 +1,4 @@
-# PragatiShala — AI-Powered Skill Development Platform
+# PragatiShala: AI-powered skill development platform
 
 PragatiShala helps Indian learners understand where their skills stand and what
 to learn next. Describe your experience in plain language and the platform
@@ -11,7 +11,7 @@ mouse-only interactions).
 
 ## Current status (honest)
 
-Last verified 2026-09-18: all gates green from a clean tree — backend
+Last verified 2026-09-18: all gates green from a clean tree: backend
 **291 tests passed** (99.33% line+branch coverage, strict mypy, ruff,
 deptry, vulture), frontend **37 tests passed** (eslint, `tsc -b`, Knip,
 production build). Every feature below was re-exercised over live HTTP and
@@ -20,27 +20,27 @@ through the Vite dev proxy on that date; the screenshots in
 
 What works end-to-end today:
 
-- **User management** — registration, login (OAuth2 password flow), JWT access
+- **User management**: registration, login (OAuth2 password flow), JWT access
   + refresh tokens, profile view/update, logout.
-- **Skill assessment** — submit a free-form narrative (20–8,000 chars), get
+- **Skill assessment**: submit a free-form narrative (20–8,000 chars), get
   detected skills with levels, strengths, gaps, recommended roles, and a
   readiness score.
-- **Learning paths** — generate an ordered roadmap (up to 8 modules with
+- **Learning paths**: generate an ordered roadmap (up to 8 modules with
   milestones, estimated hours, resources) from your latest assessment.
-- **Resume builder** — generate a structured resume draft from a target role,
+- **Resume builder**: generate a structured resume draft from a target role,
   skills, and experience text; list/fetch/update saved resumes.
-- **Market insights** — cached market analysis per role family (24-hour cache).
-- **Realtime events** — per-user Server-Sent Events stream announcing completed
+- **Market insights**: cached market analysis per role family (24-hour cache).
+- **Realtime events**: per-user Server-Sent Events stream announcing completed
   assessments, learning paths, and resumes.
-- **AI or offline, always working** — if an OpenAI-compatible or Anthropic API
+- **AI or offline, always working**: if an OpenAI-compatible or Anthropic API
   key is configured, LLM output (strictly schema-validated) powers the
   features; with no keys configured a deterministic rule-based engine takes
   over so every feature works fully offline.
 
 Not built yet (see `docs/roadmap.md`): OAuth social login, multi-language UI,
 job-board integrations, Docker/deployment packaging. Schema changes run
-through the startup upgrade runner (ADR-0008) rather than Alembic — a
-recorded decision, not an omission.
+through the startup upgrade runner (ADR-0008) rather than Alembic; that is a
+recorded decision (ADR-0008).
 
 ## Tech stack
 
@@ -67,7 +67,7 @@ cp .env.example .env                   # then set PRAGATISHALA_JWT_SECRET_KEY
 uv run uvicorn app.main:app --reload   # http://127.0.0.1:8000
 ```
 
-API docs: <http://127.0.0.1:8000/api/docs> — served only when
+API docs: <http://127.0.0.1:8000/api/docs>, served only when
 `PRAGATISHALA_DEBUG=true` (default off, AR-027); otherwise the Swagger UI and
 `/api/openapi.json` return 404.
 
@@ -106,7 +106,7 @@ PRAGATISHALA_OPENAI_API_KEY=...      # any OpenAI-compatible endpoint
 PRAGATISHALA_ANTHROPIC_API_KEY=...
 ```
 
-Keys are read from the environment only — never hardcoded, never committed.
+Keys are read from the environment only: never hardcoded, never committed.
 
 ## Quality gates (all enforced)
 
@@ -134,7 +134,7 @@ readiness-score bounds, rule-engine determinism, scope isolation in the skill
 engine, and tolerant LLM-JSON extraction.
 
 Mutation testing was assessed (adversarial review AR-031: ~1,200 statements,
-~30 s suite — well within a bounded run) but is **not wired in on this host**:
+~30 s suite, well within a bounded run) but is **not wired in here**:
 the current tool, mutmut 3.x, requires process forking and needs WSL on
 Windows, while CI runs on Ubuntu where it would work. When a Linux
 environment is available:
@@ -178,11 +178,11 @@ docs/            # PRD, architecture, ADRs, style guide, limitations, roadmap
 - [Design (HLD + LLD overview)](docs/design.md)
 - [Product requirements](docs/PRD.md)
 - [Architecture](docs/architecture.md)
-- [ADRs](docs/adr/) — key decisions with context and consequences
+- [ADRs](docs/adr/): key decisions with context and consequences
 - [Style guide](docs/STYLE_GUIDE.md)
 - [Limitations](docs/limitations.md) and [roadmap](docs/roadmap.md)
 - [Build log](BUILD_LOG.md) and [changelog](CHANGELOG.md)
-- [Screenshots](docs/screenshots/) — captured from a real run (2026-09-18)
+- [Screenshots](docs/screenshots/): captured from a real run (2026-09-18)
 
 ## Contributing
 
@@ -196,4 +196,7 @@ controls, focus loss) are release blockers.
 
 ## CI note (2026-09-16)
 
-GitHub Actions is DISABLED on this repository by owner decision (no paid Actions: the account is billing-blocked and the owner declined spend). Every quality gate was verified by local execution at the recorded HEAD. Zero-cost remote option if ever wanted: a self-hosted runner (re-enable via Settings -> Actions, or gh api -X PUT repos/pranam-s/pragatishala-skill-development/actions/permissions -F enabled=true).
+GitHub Actions is disabled on this repository to keep spend at zero.
+Every quality gate was verified by local execution at the recorded HEAD.
+If remote CI is ever wanted, a self-hosted runner covers it without paid
+minutes (re-enable Actions in the repository settings).

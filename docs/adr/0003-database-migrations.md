@@ -1,4 +1,4 @@
-# ADR 0003 — Database: create_all now, Alembic later
+# ADR 0003: Database: create_all now, Alembic later
 
 Status: accepted
 
@@ -6,7 +6,7 @@ Status: accepted
 
 The MVP schema is still moving (assessments, learning paths, resumes, and the
 market cache were all added in the first two phases). Migration tooling adds
-process weight that a pre-release project cannot monetize yet.
+process weight that a pre-release project does not benefit from yet.
 
 ## Decision
 

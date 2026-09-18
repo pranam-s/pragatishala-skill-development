@@ -1,12 +1,12 @@
-# ADR 0005 — AI: provider-agnostic clients with deterministic offline fallback
+# ADR 0005: AI: provider-agnostic clients with deterministic offline fallback
 
 Status: accepted
 
 ## Context
 
-The product's core loop (assess → gap → roadmap) must work for the owner
-offline, in a VM with no guaranteed network, and with no budget for API keys
-during development. It must also improve automatically when a key exists. The
+The product's core loop (assess → gap → roadmap) must work offline, on a
+machine with no guaranteed network, and with no API keys configured during
+development. It must also improve automatically when a key exists. The
 LLM vendor landscape changes monthly.
 
 ## Decision
@@ -27,7 +27,7 @@ LLM vendor landscape changes monthly.
 ## Consequences
 
 - The platform never hard-fails on model outages, malformed output, or missing
-  keys — worst case is rule-based quality.
+  keys; worst case is rule-based quality.
 - Tests exercise HTTP paths with mocked transports and the engine contract with
   stub providers; no live API calls in CI.
 - Vendor lock-in is limited to the JSON prompt/response shape; swapping vendors

@@ -23,14 +23,14 @@
 
 ### Layers
 
-- **routers/** — HTTP concerns only: status codes, error mapping, response
+- **routers/**: HTTP concerns only, status codes, error mapping, response
   schemas. No business logic.
-- **services.py** — business logic: ownership checks, persistence, event
+- **services.py**: business logic, ownership checks, persistence, event
   publishing. Raises domain errors (`NotFoundError`,
   `AlreadyRegisteredError`, …) that routers translate to HTTP.
-- **models.py / schemas.py** — persistence (SQLAlchemy) and transport (Pydantic)
+- **models.py / schemas.py**: persistence (SQLAlchemy) and transport (Pydantic)
   contracts, kept separate; `model_validate` converts at the boundary.
-- **deps.py** — dependency wiring: DB session, current user, skill engine,
+- **deps.py**: dependency wiring, DB session, current user, skill engine,
   event bus. Handlers declare what they need via `Annotated` aliases.
 
 ### The SkillEngine (AI + offline)
@@ -67,7 +67,7 @@ only (`build_provider` reads `Settings`).
 ### Realtime
 
 `EventBus` is an in-process, per-user fan-out of bounded queues (full queues
-drop events — REST is the source of truth). `GET /api/v1/events` streams SSE
+drop events; REST is the source of truth). `GET /api/v1/events` streams SSE
 frames with keep-alive comments and unsubscribes on disconnect. Single-process
 by design for the MVP; see [adr/0004](adr/0004-realtime.md).
 
@@ -82,16 +82,16 @@ remains a deliberate post-MVP step ([adr/0003](adr/0003-database-migrations.md))
 
 ## Frontend
 
-- **api/client.ts** — typed fetch wrapper: injects the bearer token, retries
+- **api/client.ts**: typed fetch wrapper. Injects the bearer token, retries
   once through `/auth/refresh` on 401, parses FastAPI error details into
   `ApiError`. Base URL defaults to `/api/v1` (Vite proxy in dev).
-- **AuthContext** — session bootstrap (`me()` on mount when a token exists),
+- **AuthContext**: session bootstrap (`me()` on mount when a token exists),
   login, registration (auto sign-in), logout. Tokens persist in localStorage
   ([adr/0002](adr/0002-authentication.md)).
-- **Routing** — public (`/`, `/login`, `/register`) and authenticated
+- **Routing**: public (`/`, `/login`, `/register`) and authenticated
   (`/assessment`, `/learning-path`, `/profile`) routes; `ProtectedRoute` redirects
   anonymous visitors to `/login` with a `from` location for return.
-- **Accessibility** — Chakra `Field` label association, `role="alert"` error
+- **Accessibility**: Chakra `Field` label association, `role="alert"` error
   regions, `aria-live="polite"` status regions, `aria-current="page"` nav,
   real buttons/links, visible focus, no mouse-only affordances.
 
@@ -101,7 +101,7 @@ remains a deliberate post-MVP step ([adr/0003](adr/0003-database-migrations.md))
   no raw exceptions cross the HTTP boundary.
 - Configuration: one `Settings` class, `PRAGATISHALA_`-prefixed env vars,
   validators enforce invariants (positive TTLs, strong secret).
-- Determinism: the offline engine is pure functions over curated data — the
+- Determinism: the offline engine is pure functions over curated data; the
   entire platform is demonstrable with zero network access.
 
 ## ADR index

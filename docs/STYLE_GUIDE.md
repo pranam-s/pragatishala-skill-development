@@ -19,7 +19,7 @@ judgement parts.
 - Routers: HTTP concerns only (status codes, error mapping). Domain errors are
   raised by `services.py` and translated at the boundary.
 - Dependencies are declared with `Annotated` aliases (`SessionDep`,
-  `CurrentUser`, `EngineDep`, `BusDep`) — never inline `Depends(...)` chains.
+  `CurrentUser`, `EngineDep`, `BusDep`); never inline `Depends(...)` chains.
 - All settings flow through `app.config.Settings` with the
   `PRAGATISHALA_` env prefix. No `os.environ` reads outside config (tests may
   bootstrap env before import).
@@ -44,7 +44,7 @@ judgement parts.
 
 - ESLint 10 flat config + `typescript-eslint` + react-hooks/react-refresh
   plugins; `tsc -b` strict. (Biome was considered; ESLint was already
-  configured with the needed React plugins — one linter, used deeply.)
+  configured with the needed React plugins, so one linter is used deeply.)
 - Vitest + Testing Library. Query by role/label (never test-id) so tests
   double as accessibility checks.
 

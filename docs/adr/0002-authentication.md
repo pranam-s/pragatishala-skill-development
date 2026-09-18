@@ -1,4 +1,4 @@
-# ADR 0002 — Authentication: JWT pairs, Argon2id, localStorage tokens
+# ADR 0002: Authentication: JWT pairs, Argon2id, localStorage tokens
 
 Status: accepted
 
@@ -12,7 +12,7 @@ client flow (no silent redirects, explicit error announcements).
 
 - OAuth2 password flow (`POST /auth/login` with form credentials) returning an
   access token (30 min) + refresh token (7 days), both HS256 JWTs carrying
-  `sub`, `type`, `exp`, `jti` — extended 2026-09 (AR-025) to also carry and
+  `sub`, `type`, `exp`, `jti` (extended 2026-09, AR-025) to also carry and
   require `iss`/`aud`/`iat`, with the algorithm pinned to the HS family, so
   tokens minted for another system never validate here.
 - Passwords hashed with Argon2id via `argon2-cffi`; unknown accounts perform a
@@ -25,7 +25,7 @@ client flow (no silent redirects, explicit error announcements).
   every request; a 401 triggers exactly one refresh + retry. Trade-off: tokens
   are readable by page JS (XSS-amplified). Mitigations for this MVP: strict
   TypeScript, no third-party scripts, no dangerouslySetInnerHTML. HttpOnly
-  cookies require same-site deployment and CSRF defence — deferred to Phase 3
+  cookies require same-site deployment and CSRF defence, deferred to Phase 3
   security hardening.
 
 ## Consequences

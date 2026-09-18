@@ -1,12 +1,12 @@
-# ADR 0001 — Backend stack: Python 3.13 + FastAPI, managed with uv
+# ADR 0001: Backend stack: Python 3.13 + FastAPI, managed with uv
 
 Status: accepted
 
 ## Context
 
-The project brief requires a Python backend with the latest stable tooling,
-complete async, and strong quality gates. The owner's machine is a 12 GB RAM
-VM shared with several agents, so tooling must be fast and lean.
+The project requires a Python backend with the latest stable tooling,
+complete async, and strong quality gates. The development machine is a
+12 GB RAM VM shared with other work, so tooling must be fast and lean.
 
 ## Decision
 

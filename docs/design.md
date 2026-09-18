@@ -1,4 +1,4 @@
-# Design — PragatiShala
+# Design: PragatiShala
 
 The high-level and low-level design in one pass. This is the overview
 layer: deep detail (auth internals, engine contracts, event flows) lives in
@@ -59,7 +59,7 @@ boundaries:
 
 Verified end to end on 2026-09-18 against the real server: register →
 login → assessment (201, `rule_based`, readiness scored) → learning path
-(201, modules generated) — see the screenshots in this folder and
+(201, modules generated); see the screenshots in this folder and
 STATUS-level numbers in the README.
 
 ## 4. Module breakdown (LLD)
@@ -87,7 +87,7 @@ STATUS-level numbers in the README.
 | `components/` | Pages (login, registration, assessment, learning path, profile) + Navbar/ProtectedRoute/RouteTitle |
 | `test/` | jsdom + testing-library setup; component tests colocated with components |
 
-Accessibility posture (owner requirement): errors use `role="alert"`,
+Accessibility posture (a release-blocking requirement): errors use `role="alert"`,
 dynamic results are wrapped in `aria-live="polite"` regions, the navbar is
 `aria-label`ed, sections are `aria-labelledby` their headings, and all
 flows are keyboard-operable (Chakra primitives + explicit focus
@@ -104,7 +104,7 @@ management in route changes).
 | [0005](adr/0005-ai-fallback.md) | Provider-agnostic AI with deterministic fallback |
 | [0006](adr/0006-jwt-secret-policy.md) | JWT secret policy (known example values rejected at startup) |
 | [0007](adr/0007-rate-limiting.md) | Login rate limiting |
-| [0008](adr/0008-startup-schema-upgrades.md) | Startup upgrade runner instead of Alembic (recorded deviation — do not revert without a new ADR) |
+| [0008](adr/0008-startup-schema-upgrades.md) | Startup upgrade runner instead of Alembic (recorded deviation; do not revert without a new ADR) |
 
 ## 6. Quality gates
 
@@ -113,5 +113,4 @@ branch coverage ≥ 90% enforced in `addopts` (measured 99.33%, 291 tests),
 warnings-as-errors, Hypothesis property tests. Frontend: eslint, `tsc -b`,
 vitest (37 tests), Knip, production build. Both sides plus the AI
 provider checks run in CI (`.github/workflows/ci.yml`) and were validated
-by local execution; GitHub Actions stays disabled per the owner's
-zero-spend policy.
+by local execution; GitHub Actions stays disabled (zero-spend policy).

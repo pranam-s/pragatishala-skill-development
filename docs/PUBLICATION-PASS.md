@@ -1,11 +1,11 @@
-# Publication pass — hostile re-review and release checks at final HEAD
+# Publication re-check: hostile re-review and release checks at final HEAD
 
-Fourth review pass ("AR4"), executed 2026-09-13 at HEAD `1a66c49` (then
-`1678cff`..). This pass re-audited the two prior remediation waves with fresh
+Review round AR4, executed 2026-09-13 at HEAD `1a66c49`. This
+re-audit covered the two prior remediation waves with fresh
 eyes and executed probes, re-verified every dependency against live PyPI/npm,
 re-executed the documented quickstarts end to end, and re-measured all gates.
 Everything below is evidence-backed; nothing was taken on trust from the
-previous passes.
+earlier reviews.
 
 ## 1. Hostile code review
 
@@ -14,7 +14,7 @@ previous passes.
 **AR4-1 (medium, auth): JWT subject parsing crashed on non-ASCII digits.**
 `app/deps.py:59` parsed the token subject with `subject.isdigit()`. Python's
 `str.isdigit` also accepts characters like `"²"` (U+00B2) for which `int()`
-raises `ValueError` — verified live before the fix. Any token carrying such a
+raises `ValueError`, verified live before the fix. Any token carrying such a
 subject turned the malformed-subject defense path into an unhandled 500
 instead of a clean 401. Fix: ASCII-digits-only check, so every malformed
 subject degrades to `None` → 401. Regression tests:
@@ -26,12 +26,12 @@ experience figure.** `app/ai/engine.py:274` (`_shared_level_word`) shared the
 nearest clause level word with any list sibling unless a discourse marker
 sat between them. A years figure re-anchors attribution to its own mention,
 but the sharing crossed it:
-`"Expert in Python, 5 years with Go and Rust."` scored **Rust: expert** —
+`"Expert in Python, 5 years with Go and Rust."` scored **Rust: expert**;
 Python's "Expert" leaked across Go's "5 years with" phrase (verified live
 before the fix). Fix: an experience figure in the gap between the level word
 and the mention is an attribution boundary, matching AR3-005's doctrine.
 The pinned AR3-003 list-sibling behavior (`"Expert in Python, SQL, and
-Java."`) is unaffected — no figure in those gaps. Regression test:
+Java."`) is unaffected; no figure in those gaps. Regression test:
 `tests/test_engine.py::test_level_word_sharing_stops_at_another_skills_years_figure`.
 
 **AR4-3 (hardening test, rate limiting): the HEAD-bypass suspicion was
@@ -52,7 +52,7 @@ change.
 - **Schema-upgrade runner** (`app/database.py:85-122`, ADR 0008).
   *Transaction/lock semantics:* `create_all` + upgrades run in one
   `engine.begin()` block. SQLite DDL is transactional; MySQL DDL
-  implicit-commits — but recovery is safe either way because each upgrade
+  implicit-commits, but recovery is safe either way because each upgrade
   keys on column *existence*, not only on the version record: after a crash
   between `ALTER` and the version `INSERT`, the re-run skips the ALTER and
   just stamps the version. That exact recovery shape is pinned by
@@ -64,7 +64,7 @@ change.
   parameterized.
 - **Market-refresh budget** (`app/routers/market.py:53`, AR3-006). Every
   boolean encoding FastAPI accepts for `refresh` (`true/True/TRUE/1/on/yes`)
-  funnels through the same handler where the budget is charged — no bypass
+  funnels through the same handler where the budget is charged; no bypass
   shape (verified by probing pydantic's bool coercion). No off-by-one: the
   sliding window admits exactly `budget` refreshes per rolling hour;
   `retry_after` is `ceil(oldest + window − now)`, minimum 1. No timezone
@@ -78,7 +78,7 @@ change.
   exceptions are converted to 500 by the inner ExceptionMiddleware, so they
   pass the 3xx window and correctly keep their consumed slot. Known and
   accepted: under same-key concurrency the refund can pop a sibling request's
-  hit (documented best-effort in `refund`'s docstring, `ratelimit.py:72`) —
+  hit (documented best-effort in `refund`'s docstring, `ratelimit.py:72`);
   an under-count by at most 1 per redirect, never an over-count, and never
   reachable without a legitimate 3xx.
 - **Skill-detection engine veto/binding logic** (AR3 waves). Probed the
@@ -88,7 +88,7 @@ change.
   years binding; edge-adjacent separators ("Python, 6 years.") still bind.
   One conservative false negative noted and accepted: in "REST APIs with
   Node and Go at work." the shared "with" is adjacent only to Node, so Go is
-  dropped — the AR3-008 corroboration rule is deliberately anti-fabrication;
+  dropped. The AR3-008 corroboration rule is deliberately anti-fabrication;
   a true claim missed beats a fabricated one.
 - **Auth/JWT handling.** HS-family algorithm locked by `Literal` type
   (AR-025); issuer/audience enforced with required claims; refresh resolves
@@ -186,13 +186,13 @@ ships TS-7 support. No deprecated packages anywhere in either manifest.
 | "289 tests / 99.36% coverage" (README, AGENTS.md, limitations.md, CHANGELOG) | yes | matches final gates exactly |
 | ADR statuses (0001–0008 all "accepted") | reviewed vs code | all implemented and current, incl. ADR 0008 (upgrades verified by tests and by the legacy-DB endpoint test) |
 
-Stale claims fixed this pass: the 278-test count (README, AGENTS.md,
-limitations.md) and the CHANGELOG/BUILD_LOG entries for this pass.
+Stale claims fixed in this re-check: the 278-test count (README, AGENTS.md,
+limitations.md) and the CHANGELOG/BUILD_LOG entries for this round.
 
 ## 4. Publishability checks
 
 - **LICENSE:** MIT, present, copyright "2025 Pranam Srivastava".
-- **CI** (`.github/workflows/ci.yml`): runs the exact local gates — ruff
+- **CI** (`.github/workflows/ci.yml`): runs the exact local gates: ruff
   check + format, mypy strict, pytest with the 90% coverage gate,
   frontend eslint / `tsc -b && vite build` / vitest; `uv sync --frozen` and
   `npm ci` (no drift between lock and manifests). Node 24 / Python 3.13 match
@@ -201,14 +201,14 @@ limitations.md) and the CHANGELOG/BUILD_LOG entries for this pass.
   `node_modules`, `dist`, coverage artifacts. `backend/pragatishala.db` on
   disk is untracked runtime state, as intended.
 - **No absolute/personal paths in tracked files:** grep over tracked files
-  for `C:\`, `/c/Users`, `/home/` — none outside this document's own prose
+  for `C:\`, `/c/Users`, `/home/`; none outside this document's own prose
   (none in code, configs, or CI).
 - **No secrets:** see §1.2; the only committed secret-shaped strings are the
   intentionally-invalid `.env.example` placeholder and CI's env-scoped
   throwaway.
 - **Version + CHANGELOG:** `app.__version__` = `settings.app_version` =
   pyproject `version` = `0.1.0`; `/healthz` reports it. CHANGELOG follows
-  Keep-a-Changelog with per-pass entries; 0.1.0 has not been cut yet, so
+  Keep-a-Changelog with dated entries; 0.1.0 has not been cut yet, so
   everything lives under [Unreleased] by design.
 
 ## 5. Final gates (clean tree, final HEAD)
@@ -222,6 +222,6 @@ limitations.md) and the CHANGELOG/BUILD_LOG entries for this pass.
 | `uv run mypy` (strict) | no issues in 24 source files |
 | `npm run lint` (frontend) | clean |
 | `npm run test` (vitest) | **37 passed** |
-| `npm run build` (`tsc -b && vite build`) | clean build (cosmetic >500 kB chunk warning on the Chakra bundle — no functional impact, noted as known) |
+| `npm run build` (`tsc -b && vite build`) | clean build (cosmetic >500 kB chunk warning on the Chakra bundle; no functional impact, noted as known) |
 | `npm ci` from lockfile | 0 vulnerabilities |
 | `uv lock --check` / `npm ci` vs manifests | no drift |

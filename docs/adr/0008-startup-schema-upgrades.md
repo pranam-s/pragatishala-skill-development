@@ -1,4 +1,4 @@
-# ADR 0008 — Startup schema upgrades (create_all + versioned ALTERs)
+# ADR 0008: Startup schema upgrades (create_all + versioned ALTERs)
 
 Status: accepted
 

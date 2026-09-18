@@ -1,4 +1,4 @@
-# ADR 0004 — Realtime: in-process SSE bus, Redis pub/sub later
+# ADR 0004: Realtime: in-process SSE bus, Redis pub/sub later
 
 Status: accepted
 
@@ -12,7 +12,7 @@ process; multi-instance deployment is not on the table yet.
 
 - Server-Sent Events (one GET /api/v1/events stream per authenticated user).
 - `EventBus` keeps bounded per-user queues (`asyncio.Queue`, maxsize 100);
-  publishes never block and full queues drop events with a warning — REST
+  publishes never block and full queues drop events with a warning; REST
   remains the source of truth, so drops are cosmetic, never corrupting.
 - Keep-alive comments flow on idle so proxies do not close the stream; the
   generator unsubscribes in a `finally` block on disconnect.

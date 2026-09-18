@@ -5,15 +5,14 @@ change is the one the codebase already holds itself to.
 
 ## Ground rules
 
-- **Accessibility is a release blocker.** The owner is a blind NVDA
-  screen-reader user: keyboard-navigable flows, labelled controls, focus
-  management, and status conveyed by more than colour are required, not
-  nice-to-have.
+- **Accessibility is a release blocker.** Keyboard-navigable flows, labelled
+  controls, focus management, and status conveyed by more than colour are
+  required; nothing ships mouse-only.
 - **Tests stay offline and deterministic.** AI features are tested through
   the rule-based fallback and mocked providers; a test that needs an API
   key or network does not belong here.
 - **No hacks.** No placeholders, no stubs treated as done, no suppressed
-  warnings (`filterwarnings = ["error"]` is deliberate — the suite must
+  warnings (`filterwarnings = ["error"]` is deliberate; the suite must
   stay warning-free), no skipped tests.
 - **Layer boundaries hold.** Routers have no business logic; services own
   rules; AI is a strategy behind the SkillEngine contract (ADR-0005).

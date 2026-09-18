@@ -27,4 +27,4 @@ Every page must remain keyboard-operable and screen-reader friendly:
 labelled inputs (Chakra `Field`), `role="alert"` error regions,
 `aria-live="polite"` status regions, `aria-current="page"` navigation, real
 buttons and links, visible focus. Accessibility regressions are release
-blockers — see `docs/STYLE_GUIDE.md`.
+blockers; see `docs/STYLE_GUIDE.md`.

@@ -1,4 +1,4 @@
-# PragatiShala — Product Requirements Document
+# PragatiShala product requirements document
 
 Status: living document. Phase 1 and Phase 2 are implemented; Phase 3 is
 partially implemented (see [roadmap.md](roadmap.md)).
@@ -15,8 +15,7 @@ not teach.
 
 ## Product principles
 
-1. **Accessibility is a feature, not a checkbox.** The primary stakeholder
-   (the owner) uses NVDA. Every flow must be keyboard-operable, labelled, and
+1. **Accessibility.** Every flow must be keyboard-operable, labelled, and
    announced correctly by screen readers. Regressions are release blockers.
 2. **Works offline, better online.** Every AI feature has a deterministic
    rule-based fallback. The product never shows "service unavailable" for its
@@ -36,7 +35,7 @@ not teach.
 
 ## Features
 
-### Phase 1 — Core platform (implemented)
+### Phase 1: core platform (implemented)
 
 | Feature             | Requirement                                                                     | Status |
 | ------------------- | ------------------------------------------------------------------------------- | ------ |
@@ -48,7 +47,7 @@ not teach.
 | Resume builder      | Structured draft from role + skills + experience/education/projects text        | Done   |
 | Ownership           | Users can only read/modify their own assessments, paths, and resumes            | Done   |
 
-### Phase 2 — AI integration (implemented)
+### Phase 2: AI integration (implemented)
 
 | Feature              | Requirement                                                                       | Status |
 | -------------------- | --------------------------------------------------------------------------------- | ------ |
@@ -57,12 +56,12 @@ not teach.
 | Market analysis      | Per-role-family insights with 24-hour cache (`engine_used` records origin)        | Done   |
 | Realtime updates     | SSE stream per user; events on assessment/path/resume completion                  | Done   |
 
-### Phase 3 — Platform enhancement (partial, see roadmap)
+### Phase 3: platform enhancement (partial, see roadmap)
 
-- Analytics and progress tracking — not started.
-- Performance optimization — not started (current scale is fine for dev).
-- Additional integrations (job boards, LinkedIn) — not started.
-- Enhanced security — partial: strong hashing, expiry, ownership checks, CORS
+- Analytics and progress tracking: not started.
+- Performance optimization: not started (current scale is fine for dev).
+- Additional integrations (job boards, LinkedIn): not started.
+- Enhanced security, partial: strong hashing, expiry, ownership checks, CORS
   allow-list, env-only secrets, and rate limiting done; account recovery
   (email verification, password reset, token revocation) missing.
 
@@ -74,7 +73,7 @@ not teach.
 | Test coverage | ≥90% line AND branch on backend `app` package (enforced, currently ~99%) | Done   |
 | Type safety   | `mypy --strict` clean; TypeScript `strict` clean                       | Done   |
 | Secrets       | Environment only; `.env` git-ignored; `.env.example` documents all vars | Done   |
-| Privacy       | No third-party analytics; narratives stored only for the owner's history | Done   |
+| Privacy       | No third-party analytics; narratives stored only for the user's own history | Done   |
 
 ## Out of scope (for now)
 
