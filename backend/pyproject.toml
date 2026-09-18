@@ -8,6 +8,10 @@ dependencies = [
     "email-validator>=2.3.0",
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
+    # pydantic and starlette are imported directly (schemas, rate-limit
+    # middleware) rather than only through fastapi's transitive graph.
+    "pydantic>=2.13.5",
+    "starlette>=0.49.0",
     "pydantic-settings>=2.15.0",
     "pyjwt>=2.14.0",
     "python-multipart>=0.0.32",
@@ -23,7 +27,24 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.16.7",
+    "deptry>=0.25.1",
+    "vulture>=2.16",
 ]
+
+[tool.deptry]
+known_first_party = ["app"]
+
+[tool.deptry.package_module_name_map]
+pyjwt = "jwt"
+argon2-cffi = "argon2"
+
+[tool.deptry.per_rule_ignores]
+# DEP002 (declared, never imported directly):
+#   aiosqlite        SQLAlchemy driver, selected via the DATABASE_URL scheme
+#   email-validator  pydantic[email] extra, used at validation time
+#   python-multipart imported lazily by Starlette for form bodies
+#   uvicorn          the server process itself
+DEP002 = ["aiosqlite", "email-validator", "python-multipart", "uvicorn"]
 
 [build-system]
 requires = ["uv_build>=0.12.13,<0.13.0"]

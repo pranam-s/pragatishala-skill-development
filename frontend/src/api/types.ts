@@ -77,5 +77,3 @@ export const EXPERIENCE_LEVELS = [
   { value: "mid", label: "Mid-level (3-7 years)" },
   { value: "senior", label: "Senior (7+ years)" },
 ] as const;
-
-export type ExperienceLevel = (typeof EXPERIENCE_LEVELS)[number]["value"];
