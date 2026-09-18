@@ -11,8 +11,14 @@ mouse-only interactions).
 
 ## Current status (honest)
 
-What works end-to-end today (verified over live HTTP and through the Vite dev
-proxy):
+Last verified 2026-09-18: all gates green from a clean tree — backend
+**291 tests passed** (99.33% line+branch coverage, strict mypy, ruff,
+deptry, vulture), frontend **37 tests passed** (eslint, `tsc -b`, Knip,
+production build). Every feature below was re-exercised over live HTTP and
+through the Vite dev proxy on that date; the screenshots in
+[docs/screenshots/](docs/screenshots/) come from that run.
+
+What works end-to-end today:
 
 - **User management** — registration, login (OAuth2 password flow), JWT access
   + refresh tokens, profile view/update, logout.
@@ -32,7 +38,9 @@ proxy):
   over so every feature works fully offline.
 
 Not built yet (see `docs/roadmap.md`): OAuth social login, multi-language UI,
-job-board integrations, Docker/deployment packaging, Alembic migrations.
+job-board integrations, Docker/deployment packaging. Schema changes run
+through the startup upgrade runner (ADR-0008) rather than Alembic — a
+recorded decision, not an omission.
 
 ## Tech stack
 
@@ -167,12 +175,14 @@ docs/            # PRD, architecture, ADRs, style guide, limitations, roadmap
 
 ## Documentation
 
+- [Design (HLD + LLD overview)](docs/design.md)
 - [Product requirements](docs/PRD.md)
 - [Architecture](docs/architecture.md)
 - [ADRs](docs/adr/) — key decisions with context and consequences
 - [Style guide](docs/STYLE_GUIDE.md)
 - [Limitations](docs/limitations.md) and [roadmap](docs/roadmap.md)
 - [Build log](BUILD_LOG.md) and [changelog](CHANGELOG.md)
+- [Screenshots](docs/screenshots/) — captured from a real run (2026-09-18)
 
 ## Contributing
 

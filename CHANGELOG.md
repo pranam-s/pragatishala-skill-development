@@ -4,6 +4,33 @@ All notable changes to PragatiShala are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — 2026-09-18 (production-completion pass)
+
+### Changed
+- Dependencies refreshed to latest stable: backend `uv lock --upgrade`
+  (sqlalchemy 2.0.54, uvicorn 0.53.0, ruff 0.16.8, coverage 7.16.1, idna
+  3.20, greenlet 3.5.6, ast-serialize 0.11.2); frontend `npm update`
+  within semver ranges (vitest 5.0.1, @vitest/coverage-v8 5.0.1,
+  react-router-dom 7.18.4, jsdom 30.1.0, @testing-library/dom 10.4.2,
+  eslint-plugin-react-refresh 0.5.7, @types/node 24.13.5).
+- `pydantic` and `starlette` are now declared as direct dependencies
+  (they are imported directly, not only reached through FastAPI).
+
+### Added
+- Dead-code analysis as first-class gates: `deptry` and `vulture` in the
+  backend dev group (package/module name maps and justified DEP002
+  exemptions documented in `pyproject.toml`), `knip.json` for the
+  frontend. Both run clean.
+- docs/design.md — HLD + LLD overview layer with system and data-flow
+  diagrams and the ADR index (architecture.md remains the deep reference).
+- docs/screenshots/ — seven screenshots captured from a real
+  register → login → assessment → learning-path run through the Vite dev
+  proxy on 2026-09-18.
+
+### Removed
+- `@emotion/styled` (unused after the Chakra v3 migration) and the
+  unused `ExperienceLevel` type alias.
+
 ## [Unreleased] — 2026-09-14 (AR-027 information-exposure fix)
 
 ### Fixed
