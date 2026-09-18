@@ -185,5 +185,3 @@ cache artifacts; untracked in-progress backend scaffolding existed
   editable .pth resolves to the working tree.
 - Pytest config lives in `backend/pyproject.toml` (asyncio auto, coverage
   fail-under 90, filterwarnings=error; new warnings fail CI).
-- On this machine `python` is not on PATH; use `uv run python` or the venv's
-  `python.exe`.

@@ -5,15 +5,8 @@ instructions, research notes, plans, and implementation status. It is updated
 throughout development. Current-state detail lives in [README.md](README.md),
 [docs/architecture.md](docs/architecture.md), and [BUILD_LOG.md](BUILD_LOG.md).
 
-## User Instructions (standing)
+## Standing requirements
 
-*   Implement the GitHub repository, which has a `readme.md` with features and requirements.
-*   Use for backend latest Python + FastAPI + complete async + UV + Ruff, and whatever you wish and find best for frontend.
-*   Follow best practices.
-*   Find best features and more things to add.
-*   Take references from comparable platforms, and hold the work to the highest standard.
-*   Keep researching or refining features to be added or implemented in the platform accordingly.
-*   Keep this document updated with instructions, findings, plans, and status.
 *   Accessibility requirement (added 2026-09): every UI must be
     keyboard-navigable, labelled, and screen-reader friendly; a11y
     regressions are release blockers.
