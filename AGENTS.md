@@ -89,7 +89,7 @@ throughout development. Current-state detail lives in [README.md](README.md),
     refresh → SSE) verified over live HTTP and through the Vite dev proxy.
 *   **Backend:** FastAPI app factory (`app/main.py`), async SQLAlchemy
     (SQLite dev / MySQL-ready), strict mypy, Ruff, 291 pytest tests with
-    99.37% line+branch coverage (≥90% enforced). See ADR 0001–0008.
+    99.33% line+branch coverage (≥90% enforced, measured 2026-09-18). See ADR 0001–0008.
 *   **AR-027 fix (2026-09-14):** `/healthz` returns only `{"status":"ok"}`
     by default (provider/version/debug diagnostics behind
     `PRAGATISHALA_DEBUG`), and `/api/docs` + `/api/openapi.json` are served
